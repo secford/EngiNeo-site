@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Контакты - EngiNeo</title>
+    <link rel="icon" type="image/png" href="image/logo.png">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Шапка сайта -->
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">
+                <img src="image/logo.png" alt="EngiNeo">
+                <span>EngiNeo</span>
+            </div>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Главная</a>
+                <a href="catalog.html" class="nav-link">Каталог</a>
+                <a href="services.html" class="nav-link">Услуги</a>
+                <a href="about.html" class="nav-link">О нас</a>
+                <a href="contact.html" class="nav-link active">Контакты</a>
+            </nav>
+            <div class="header-actions">
+                <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <a href="cart.html" class="cart-btn">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cartCount">0</span>
+                </a>
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Мобильное меню -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="index.html" class="mobile-nav-link">Главная</a>
+        <a href="catalog.html" class="mobile-nav-link">Каталог</a>
+        <a href="services.html" class="mobile-nav-link">Услуги</a>
+        <a href="about.html" class="mobile-nav-link">О нас</a>
+        <a href="contact.html" class="mobile-nav-link active">Контакты</a>
+    </div>
+
+    <!-- Заголовок страницы -->
+    <section class="page-header">
+        <div class="container">
+            <h1>Контакты</h1>
+            <nav class="breadcrumb">
+                <a href="index.html">Главная</a>
+                <span>/</span>
+                <span>Контакты</span>
+            </nav>
+        </div>
+    </section>
+
+    <!-- Контактная информация -->
+    <section class="contact-section">
+        <div class="container">
+            <div class="contact-layout">
+                <!-- Контактные данные -->
+                <div class="contact-info">
+                    <h2>Свяжитесь с нами</h2>
+                    <p>Мы всегда рады ответить на ваши вопросы и помочь с выбором услуг.</p>
+                    
+                    <div class="contact-cards">
+                        <div class="contact-card">
+                            <div class="contact-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h4>Телефон</h4>
+                                <a href="tel:+79991234567">+7 (999) 123-45-67</a>
+                                <p>Пн-Пт: 10:00 - 20:00</p>
+                            </div>
+                        </div>
+                        <div class="contact-card">
+                            <div class="contact-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h4>Email</h4>
+                                <a href="mailto:info@engineo.ru">info@engineo.ru</a>
+                                <p>Ответим в течение 24 часов</p>
+                            </div>
+                        </div>
+                        <div class="contact-card">
+                            <div class="contact-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h4>Адрес</h4>
+                                <p>Москва, ул. Примерная, 10</p>
+                                <p>м. Арбатская</p>
+                            </div>
+                        </div>
+                        <div class="contact-card">
+                            <div class="contact-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="contact-details">
+                                <h4>Режим работы</h4>
+                                <p>Пн-Пт: 10:00 - 20:00</p>
+                                <p>Сб-Вс: 11:00 - 18:00</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Соцсети -->
+                    <div class="social-section">
+                        <h4>Мы в социальных сетях</h4>
+                        <div class="social-links-large">
+                            <a href="#" class="social-link vk">
+                                <i class="fab fa-vk"></i>
+                                <span>ВКонтакте</span>
+                            </a>
+                            <a href="#" class="social-link telegram">
+                                <i class="fab fa-telegram"></i>
+                                <span>Telegram</span>
+                            </a>
+                            <a href="#" class="social-link youtube">
+                                <i class="fab fa-youtube"></i>
+                                <span>YouTube</span>
+                            </a>
+                            <a href="#" class="social-link whatsapp">
+                                <i class="fab fa-whatsapp"></i>
+                                <span>WhatsApp</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Форма обратной связи -->
+                <div class="contact-form-wrapper">
+                    <h2>Напишите нам</h2>
+                    <form class="contact-form" id="contactForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="contactName">Ваше имя *</label>
+                                <input type="text" id="contactName" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="contactEmail">Email *</label>
+                                <input type="email" id="contactEmail" name="email" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="contactPhone">Телефон</label>
+                                <input type="tel" id="contactPhone" name="phone" placeholder="+7 (___) ___-__-__">
+                            </div>
+                            <div class="form-group">
+                                <label for="contactSubject">Тема *</label>
+                                <select id="contactSubject" name="subject" required>
+                                    <option value="">Выберите тему</option>
+                                    <option value="order">Заказ</option>
+                                    <option value="consultation">Консультация</option>
+                                    <option value="cooperation">Сотрудничество</option>
+                                    <option value="support">Техподдержка</option>
+                                    <option value="other">Другое</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="contactMessage">Сообщение *</label>
+                            <textarea id="contactMessage" name="message" rows="5" required placeholder="Опишите ваш вопрос или задачу..."></textarea>
+                        </div>
+                        <div class="form-group file-upload">
+                            <label for="contactFile">
+                                <i class="fas fa-paperclip"></i>
+                                <span>Прикрепить файл (чертёж, эскиз, фото)</span>
+                            </label>
+                            <input type="file" id="contactFile" name="file" multiple>
+                        </div>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="agreement" required checked>
+                            <span class="checkmark"></span>
+                            <span>Согласен на обработку персональных данных</span>
+                        </label>
+                        <button type="submit" class="btn btn-primary btn-full btn-large">
+                            <i class="fas fa-paper-plane"></i>
+                            Отправить сообщение
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Карта -->
+    <section class="map-section">
+        <div class="container">
+            <h2 class="section-title">Как нас найти</h2>
+        </div>
+        <div class="map-wrapper">
+            <div class="map-placeholder" id="map">
+                <div class="map-content">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <p>Здесь будет интерактивная карта</p>
+                    <p>Москва, ул. Примерная, 10</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Часто задаваемые вопросы -->
+    <section class="faq-section">
+        <div class="container">
+            <h2 class="section-title">Часто задаваемые вопросы</h2>
+            <div class="faq-list">
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Как сделать заказ?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Вы можете выбрать готовую модель в каталоге и добавить её в корзину, либо загрузить свой 3D файл через форму быстрого заказа. Также можно связаться с нами по телефону или email для консультации.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Какие сроки изготовления?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Стандартный срок изготовления — от 1 до 3 рабочих дней в зависимости от сложности и размера модели. Срочная печать возможна в день обращения (дополнительная оплата 30%).</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Можно ли забрать заказ самовывозом?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Да, вы можете забрать заказ из нашего офиса по адресу: Москва, ул. Примерная, 10. Самовывоз бесплатный. Также доступна доставка курьером или почтой.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Работаете ли вы с юридическими лицами?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Да, мы работаем с юридическими лицами и ИП. Предоставляем полный пакет закрывающих документов. Возможна оплата по счёту.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Есть ли гарантия на изделия?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Да, на все изделия действует гарантия 14 дней. Если вы обнаружите дефекты печати, мы бесплатно переделаем заказ.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Футер -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <div class="footer-logo">
+                        <img src="image/logo.png" alt="EngiNeo">
+                        <span>EngiNeo</span>
+                    </div>
+                    <p>Профессиональная студия 3D печати. Создаём ваши идеи в реальность.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-vk"></i></a>
+                        <a href="#"><i class="fab fa-telegram"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h4>Каталог</h4>
+                    <ul>
+                        <li><a href="catalog.html?category=figurines">Фигурки</a></li>
+                        <li><a href="catalog.html?category=decoration">Декор</a></li>
+                        <li><a href="catalog.html?category=technical">Технические детали</a></li>
+                        <li><a href="catalog.html?category=accessories">Аксессуары</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Услуги</h4>
+                    <ul>
+                        <li><a href="services.html#modeling">3D моделирование</a></li>
+                        <li><a href="services.html#scanning">3D сканирование</a></li>
+                        <li><a href="services.html#postprocessing">Постобработка</a></li>
+                        <li><a href="services.html#design">Дизайн</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Контакты</h4>
+                    <ul class="contact-list">
+                        <li><i class="fas fa-phone"></i> +7 (999) 123-45-67</li>
+                        <li><i class="fas fa-envelope"></i> info@engineo.ru</li>
+                        <li><i class="fas fa-map-marker-alt"></i> Москва, ул. Примерная, 10</li>
+                        <li><i class="fas fa-clock"></i> Пн-Пт: 10:00 - 20:00</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 EngiNeo. Все права защищены.</p>
+                <div class="footer-links">
+                    <a href="#">Политика конфиденциальности</a>
+                    <a href="#">Договор оферты</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Каталог — EngiNeo</title>
+    <link rel="icon" type="image/png" href="image/logo.png">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Шапка сайта -->
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">
+                <img src="image/logo.png" alt="EngiNeo">
+                <span>EngiNeo</span>
+            </div>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Главная</a>
+                <a href="catalog.html" class="nav-link active">Каталог</a>
+                <a href="services.html" class="nav-link">Услуги</a>
+                <a href="about.html" class="nav-link">О нас</a>
+                <a href="contact.html" class="nav-link">Контакты</a>
+            </nav>
+            <div class="header-actions">
+                <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <a href="cart.html" class="cart-btn">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cartCount">0</span>
+                </a>
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Мобильное меню -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="index.html" class="mobile-nav-link">Главная</a>
+        <a href="catalog.html" class="mobile-nav-link active">Каталог</a>
+        <a href="services.html" class="mobile-nav-link">Услуги</a>
+        <a href="about.html" class="mobile-nav-link">О нас</a>
+        <a href="contact.html" class="mobile-nav-link">Контакты</a>
+    </div>
+
+    <!-- Заголовок страницы -->
+    <section class="page-header">
+        <div class="container">
+            <h1>Каталог моделей</h1>
+            <nav class="breadcrumb">
+                <a href="index.html">Главная</a>
+                <span>/</span>
+                <span>Каталог</span>
+            </nav>
+        </div>
+    </section>
+
+    <!-- Фильтры и товары -->
+    <section class="catalog-section">
+        <div class="container">
+            <div class="catalog-layout">
+                <!-- Боковая панель с фильтрами -->
+                <aside class="filters-sidebar">
+                    <div class="filter-section">
+                        <h3>Категории</h3>
+                        <div class="filter-options">
+                            <label class="filter-option">
+                                <input type="checkbox" value="all" checked>
+                                <span>Все категории</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" value="figurines">
+                                <span>Фигурки</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" value="decoration">
+                                <span>Декор</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" value="technical">
+                                <span>Технические детали</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" value="accessories">
+                                <span>Аксессуары</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" value="toys">
+                                <span>Игрушки</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="filter-section">
+                        <h3>Материал</h3>
+                        <div class="filter-options">
+                            <label class="filter-option">
+                                <input type="checkbox" value="pla">
+                                <span>PLA</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" value="petg">
+                                <span>PETG</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" value="abs">
+                                <span>ABS</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" value="flex">
+                                <span>Flex</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" value="nylon">
+                                <span>Nylon</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="filter-section">
+                        <h3>Цена</h3>
+                        <div class="price-range">
+                            <div class="price-inputs">
+                                <input type="number" id="minPrice" placeholder="От" min="0">
+                                <input type="number" id="maxPrice" placeholder="До" min="0">
+                            </div>
+                            <button class="btn btn-small" id="applyPriceFilter">Применить</button>
+                        </div>
+                    </div>
+                    <div class="filter-section">
+                        <h3>Размер</h3>
+                        <div class="filter-options">
+                            <label class="filter-option">
+                                <input type="checkbox" value="small">
+                                <span>Маленький (до 5 см)</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" value="medium">
+                                <span>Средний (5-15 см)</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" value="large">
+                                <span>Большой (15-30 см)</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" value="xl">
+                                <span>XL (более 30 см)</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button class="btn btn-outline btn-full" id="resetFilters">Сбросить фильтры</button>
+                </aside>
+
+                <!-- Сетка товаров -->
+                <div class="catalog-content">
+                    <div class="catalog-header">
+                        <div class="sort-options">
+                            <label>Сортировать:</label>
+                            <select id="sortSelect">
+                                <option value="popular">По популярности</option>
+                                <option value="price-asc">По цене (возрастание)</option>
+                                <option value="price-desc">По цене (убывание)</option>
+                                <option value="name">По названию</option>
+                                <option value="newest">Новинки</option>
+                            </select>
+                        </div>
+                        <div class="view-options">
+                            <button class="view-btn active" data-view="grid">
+                                <i class="fas fa-th"></i>
+                            </button>
+                            <button class="view-btn" data-view="list">
+                                <i class="fas fa-list"></i>
+                            </button>
+                        </div>
+                        <div class="results-count" id="resultsCount">
+                            Найдено: <span>0</span> товаров
+                        </div>
+                    </div>
+
+                    <div class="products-grid" id="productsGrid">
+                        <!-- Товары загружаются через JS -->
+                    </div>
+
+                    <!-- Пагинация -->
+                    <div class="pagination" id="pagination">
+                        <!-- Пагинация генерируется через JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Футер -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <div class="footer-logo">
+                        <img src="image/logo.png" alt="EngiNeo">
+                        <span>EngiNeo</span>
+                    </div>
+                    <p>Профессиональная студия 3D печати. Создаём ваши идеи в реальность.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-vk"></i></a>
+                        <a href="#"><i class="fab fa-telegram"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h4>Каталог</h4>
+                    <ul>
+                        <li><a href="catalog.html?category=figurines">Фигурки</a></li>
+                        <li><a href="catalog.html?category=decoration">Декор</a></li>
+                        <li><a href="catalog.html?category=technical">Технические детали</a></li>
+                        <li><a href="catalog.html?category=accessories">Аксессуары</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Услуги</h4>
+                    <ul>
+                        <li><a href="services.html#modeling">3D моделирование</a></li>
+                        <li><a href="services.html#scanning">3D сканирование</a></li>
+                        <li><a href="services.html#postprocessing">Постобработка</a></li>
+                        <li><a href="services.html#design">Дизайн</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Контакты</h4>
+                    <ul class="contact-list">
+                        <li><i class="fas fa-phone"></i> +7 (999) 123-45-67</li>
+                        <li><i class="fas fa-envelope"></i> info@engineo.ru</li>
+                        <li><i class="fas fa-map-marker-alt"></i> Москва, ул. Примерная, 10</li>
+                        <li><i class="fas fa-clock"></i> Пн-Пт: 10:00 - 20:00</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 EngiNeo. Все права защищены.</p>
+                <div class="footer-links">
+                    <a href="#">Политика конфиденциальности</a>
+                    <a href="#">Договор оферты</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/catalog.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

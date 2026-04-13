@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>О нас - EngiNeo</title>
+    <link rel="icon" type="image/png" href="image/logo.png">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Шапка сайта -->
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">
+                <img src="image/logo.png" alt="EngiNeo">
+                <span>EngiNeo</span>
+            </div>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Главная</a>
+                <a href="catalog.html" class="nav-link">Каталог</a>
+                <a href="services.html" class="nav-link">Услуги</a>
+                <a href="about.html" class="nav-link active">О нас</a>
+                <a href="contact.html" class="nav-link">Контакты</a>
+            </nav>
+            <div class="header-actions">
+                <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <a href="cart.html" class="cart-btn">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cartCount">0</span>
+                </a>
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Мобильное меню -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="index.html" class="mobile-nav-link">Главная</a>
+        <a href="catalog.html" class="mobile-nav-link">Каталог</a>
+        <a href="services.html" class="mobile-nav-link">Услуги</a>
+        <a href="about.html" class="mobile-nav-link active">О нас</a>
+        <a href="contact.html" class="mobile-nav-link">Контакты</a>
+    </div>
+
+    <!-- Заголовок страницы -->
+    <section class="page-header">
+        <div class="container">
+            <h1>О компании</h1>
+            <nav class="breadcrumb">
+                <a href="index.html">Главная</a>
+                <span>/</span>
+                <span>О нас</span>
+            </nav>
+        </div>
+    </section>
+
+    <!-- О компании -->
+    <section class="about-section">
+        <div class="container">
+            <div class="about-content">
+                <div class="about-text">
+                    <h2>EngiNeo — ваш надёжный партнёр в мире аддитивных технологий</h2>
+                    <p>Мы работаем на рынке 3D печати с 2020 года и за это время выполнили более 10 000 заказов для клиентов по всей России.</p>
+                    <p>Наша миссия — сделать технологии 3D печати доступными для каждого: от любителей и энтузиастов до крупных промышленных предприятий.</p>
+                    <p>Мы используем только современное оборудование и качественные материалы, что позволяет нам гарантировать высокое качество каждой напечатанной модели.</p>
+                </div>
+                <div class="about-stats">
+                    <div class="stat-item">
+                        <span class="stat-number" data-count="10000">0</span>
+                        <span class="stat-label">Выполненных заказов</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" data-count="5000">0</span>
+                        <span class="stat-label">Довольных клиентов</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" data-count="50">0</span>
+                        <span class="stat-label">3D принтеров в парке</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" data-count="20">0</span>
+                        <span class="stat-label">Материалов в наличии</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Команда -->
+    <section class="team-section">
+        <div class="container">
+            <h2 class="section-title">Наша команда</h2>
+            <div class="team-grid">
+                <div class="team-card">
+                    <div class="team-photo">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h3>Алексей Петров</h3>
+                    <p class="team-role">Основатель и технический директор</p>
+                    <p class="team-desc">10 лет опыта в аддитивных технологиях. Эксперт по FDM и SLA печати.</p>
+                </div>
+                <div class="team-card">
+                    <div class="team-photo">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h3>Мария Иванова</h3>
+                    <p class="team-role">Ведущий 3D дизайнер</p>
+                    <p class="team-desc">Специалист по 3D моделированию и скульптингу. Работает в ZBrush и Blender.</p>
+                </div>
+                <div class="team-card">
+                    <div class="team-photo">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h3>Дмитрий Сидоров</h3>
+                    <p class="team-role">Инженер по 3D печати</p>
+                    <p class="team-desc">Отвечает за настройку оборудования и контроль качества печати.</p>
+                </div>
+                <div class="team-card">
+                    <div class="team-photo">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h3>Елена Козлова</h3>
+                    <p class="team-role">Менеджер по работе с клиентами</p>
+                    <p class="team-desc">Поможет с выбором материалов и оформлением заказа.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Оборудование -->
+    <section class="equipment-section">
+        <div class="container">
+            <h2 class="section-title">Наше оборудование</h2>
+            <div class="equipment-grid">
+                <div class="equipment-card">
+                    <div class="equipment-icon">
+                        <i class="fas fa-print"></i>
+                    </div>
+                    <h3>FDM принтеры</h3>
+                    <p>15 принтеров для печати пластиковой нитью. Область печати до 300×300×400 мм.</p>
+                    <ul>
+                        <li>Prusa i3 MK3S+</li>
+                        <li>Creality CR-10</li>
+                        <li>Ultimaker S3</li>
+                    </ul>
+                </div>
+                <div class="equipment-card">
+                    <div class="equipment-icon">
+                        <i class="fas fa-flask"></i>
+                    </div>
+                    <h3>SLA/DLP принтеры</h3>
+                    <p>5 фотополимерных принтеров для высокоточной печати. Точность до 0.05 мм.</p>
+                    <ul>
+                        <li>Formlabs Form 3</li>
+                        <li>Anycubic Photon Mono</li>
+                        <li>Elegoo Mars 3</li>
+                    </ul>
+                </div>
+                <div class="equipment-card">
+                    <div class="equipment-icon">
+                        <i class="fas fa-crosshairs"></i>
+                    </div>
+                    <h3>3D сканеры</h3>
+                    <p>2 профессиональных сканера для оцифровки объектов.</p>
+                    <ul>
+                        <li>Shining 3D EinScan-SE</li>
+                        <li>Creality CR-Scan</li>
+                    </ul>
+                </div>
+                <div class="equipment-card">
+                    <div class="equipment-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <h3>Постобработка</h3>
+                    <p>Оборудование для финишной обработки изделий.</p>
+                    <ul>
+                        <li>Станции промывки</li>
+                        <li>UV камеры полимеризации</li>
+                        <li>Шлифовальное оборудование</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Материалы -->
+    <section class="materials-section">
+        <div class="container">
+            <h2 class="section-title">Используемые материалы</h2>
+            <div class="materials-grid">
+                <div class="material-card">
+                    <div class="material-color" style="background: linear-gradient(135deg, #ff6b6b, #ee5a5a);"></div>
+                    <h4>PLA</h4>
+                    <p>Биоразлагаемый пластик из кукурузы. Идеален для декоративных изделий.</p>
+                </div>
+                <div class="material-card">
+                    <div class="material-color" style="background: linear-gradient(135deg, #4ecdc4, #44a08d);"></div>
+                    <h4>PETG</h4>
+                    <p>Прочный и долговечный. Подходит для функциональных деталей.</p>
+                </div>
+                <div class="material-card">
+                    <div class="material-color" style="background: linear-gradient(135deg, #667eea, #764ba2);"></div>
+                    <h4>ABS</h4>
+                    <p>Ударопрочный пластик. Требует подогреваемой платформы.</p>
+                </div>
+                <div class="material-card">
+                    <div class="material-color" style="background: linear-gradient(135deg, #f093fb, #f5576c);"></div>
+                    <h4>Flex</h4>
+                    <p>Гибкий резиноподобный материал. Для чехлов, прокладок, амортизаторов.</p>
+                </div>
+                <div class="material-card">
+                    <div class="material-color" style="background: linear-gradient(135deg, #4facfe, #00f2fe);"></div>
+                    <h4>Nylon</h4>
+                    <p>Износостойкий и прочный. Для технических деталей и шестерён.</p>
+                </div>
+                <div class="material-card">
+                    <div class="material-color" style="background: linear-gradient(135deg, #fa709a, #fee140);"></div>
+                    <h4>Resin</h4>
+                    <p>Фотополимер для высокой детализации. Для миниатюр и ювелирных моделей.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Футер -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <div class="footer-logo">
+                        <img src="image/logo.png" alt="EngiNeo">
+                        <span>EngiNeo</span>
+                    </div>
+                    <p>Профессиональная студия 3D печати. Создаём ваши идеи в реальность.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-vk"></i></a>
+                        <a href="#"><i class="fab fa-telegram"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h4>Каталог</h4>
+                    <ul>
+                        <li><a href="catalog.html?category=figurines">Фигурки</a></li>
+                        <li><a href="catalog.html?category=decoration">Декор</a></li>
+                        <li><a href="catalog.html?category=technical">Технические детали</a></li>
+                        <li><a href="catalog.html?category=accessories">Аксессуары</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Услуги</h4>
+                    <ul>
+                        <li><a href="services.html#modeling">3D моделирование</a></li>
+                        <li><a href="services.html#scanning">3D сканирование</a></li>
+                        <li><a href="services.html#postprocessing">Постобработка</a></li>
+                        <li><a href="services.html#design">Дизайн</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Контакты</h4>
+                    <ul class="contact-list">
+                        <li><i class="fas fa-phone"></i> +7 (999) 123-45-67</li>
+                        <li><i class="fas fa-envelope"></i> info@engineo.ru</li>
+                        <li><i class="fas fa-map-marker-alt"></i> Москва, ул. Примерная, 10</li>
+                        <li><i class="fas fa-clock"></i> Пн-Пт: 10:00 - 20:00</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 EngiNeo. Все права защищены.</p>
+                <div class="footer-links">
+                    <a href="#">Политика конфиденциальности</a>
+                    <a href="#">Договор оферты</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

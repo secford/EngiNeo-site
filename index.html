@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EngiNeo — Студия 3D печати</title>
+    <link rel="icon" type="image/png" href="image/logo.png">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Шапка сайта -->
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">
+                <img src="image/logo.png" alt="EngiNeo">
+                <span>EngiNeo</span>
+            </div>
+            <nav class="nav">
+                <a href="index.html" class="nav-link active">Главная</a>
+                <a href="catalog.html" class="nav-link">Каталог</a>
+                <a href="services.html" class="nav-link">Услуги</a>
+                <a href="about.html" class="nav-link">О нас</a>
+                <a href="contact.html" class="nav-link">Контакты</a>
+            </nav>
+            <div class="header-actions">
+                <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <a href="cart.html" class="cart-btn">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cartCount">0</span>
+                </a>
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Мобильное меню -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="index.html" class="mobile-nav-link active">Главная</a>
+        <a href="catalog.html" class="mobile-nav-link">Каталог</a>
+        <a href="services.html" class="mobile-nav-link">Услуги</a>
+        <a href="about.html" class="mobile-nav-link">О нас</a>
+        <a href="contact.html" class="mobile-nav-link">Контакты</a>
+    </div>
+
+    <!-- Герой-секция -->
+    <section class="hero">
+        <div class="container hero-content">
+            <div class="hero-text">
+                <h1>Профессиональная 3D печать любой сложности</h1>
+                <p>Создадим ваши идеи в реальность с помощью современных технологий 3D печати. Быстро, качественно, доступно.</p>
+                <div class="hero-buttons">
+                    <a href="catalog.html" class="btn btn-primary">Заказать печать</a>
+                    <a href="services.html" class="btn btn-secondary">Наши услуги</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="cube-animation">
+                    <div class="cube-face front"></div>
+                    <div class="cube-face back"></div>
+                    <div class="cube-face right"></div>
+                    <div class="cube-face left"></div>
+                    <div class="cube-face top"></div>
+                    <div class="cube-face bottom"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Преимущества -->
+    <section class="features">
+        <div class="container">
+            <h2 class="section-title">Почему выбирают нас</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3>Быстрое выполнение</h3>
+                    <p>От 24 часов на выполнение заказа. Срочная печать в день обращения.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-medal"></i>
+                    </div>
+                    <h3>Высокое качество</h3>
+                    <p>Точность печати до 0.1 мм. Используем только сертифицированные материалы.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <h3>Большой выбор материалов</h3>
+                    <p>PLA, PETG, ABS, Flex, Nylon и другие. Более 20 цветов на выбор.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h3>Техническая поддержка</h3>
+                    <p>Поможем с моделированием, проконсультируем по материалам и технологиям.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Популярные товары -->
+    <section class="popular-products">
+        <div class="container">
+            <h2 class="section-title">Популярные модели</h2>
+            <div class="products-grid" id="popularProducts">
+                <!-- Товары загружаются через JS -->
+            </div>
+            <div class="section-footer">
+                <a href="catalog.html" class="btn btn-outline">Смотреть весь каталог</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Как мы работаем -->
+    <section class="how-it-works">
+        <div class="container">
+            <h2 class="section-title">Как мы работаем</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Выберите модель</h3>
+                        <p>Выберите готовую модель из каталога или загрузите свой 3D файл</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Настройте параметры</h3>
+                        <p>Выберите материал, цвет, масштаб и другие параметры печати</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Оформите заказ</h3>
+                        <p>Заполните форму заказа и выберите способ доставки</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Получите готовое изделие</h3>
+                        <p>Заберите заказ в пункте выдачи или получите курьером</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Форма быстрого заказа -->
+    <section class="quick-order">
+        <div class="container">
+            <div class="quick-order-content">
+                <div class="quick-order-text">
+                    <h2>Нужна индивидуальная печать?</h2>
+                    <p>Загрузите свою 3D модель и получите расчёт стоимости в течение 30 минут</p>
+                    <ul class="quick-order-list">
+                        <li><i class="fas fa-check"></i> Бесплатный расчёт стоимости</li>
+                        <li><i class="fas fa-check"></i> Консультация специалиста</li>
+                        <li><i class="fas fa-check"></i> Возможность внесения правок</li>
+                    </ul>
+                </div>
+                <form class="quick-order-form" id="quickOrderForm">
+                    <div class="form-group">
+                        <input type="text" placeholder="Ваше имя" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" placeholder="Email" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="tel" placeholder="Телефон" required>
+                    </div>
+                    <div class="form-group file-upload">
+                        <label for="fileUpload">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Загрузить 3D файл (.stl, .obj, .3mf)</span>
+                        </label>
+                        <input type="file" id="fileUpload" accept=".stl,.obj,.3mf" multiple>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">Рассчитать стоимость</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Футер -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <div class="footer-logo">
+                        <img src="image/logo.png" alt="EngiNeo">
+                        <span>EngiNeo</span>
+                    </div>
+                    <p>Профессиональная студия 3D печати. Создаём ваши идеи в реальность.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-vk"></i></a>
+                        <a href="#"><i class="fab fa-telegram"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h4>Каталог</h4>
+                    <ul>
+                        <li><a href="catalog.html?category=figurines">Фигурки</a></li>
+                        <li><a href="catalog.html?category=decoration">Декор</a></li>
+                        <li><a href="catalog.html?category=technical">Технические детали</a></li>
+                        <li><a href="catalog.html?category=accessories">Аксессуары</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Услуги</h4>
+                    <ul>
+                        <li><a href="services.html#modeling">3D моделирование</a></li>
+                        <li><a href="services.html#scanning">3D сканирование</a></li>
+                        <li><a href="services.html#postprocessing">Постобработка</a></li>
+                        <li><a href="services.html#design">Дизайн</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Контакты</h4>
+                    <ul class="contact-list">
+                        <li><i class="fas fa-phone"></i> +7 (999) 123-45-67</li>
+                        <li><i class="fas fa-envelope"></i> info@engineo.ru</li>
+                        <li><i class="fas fa-map-marker-alt"></i> Москва, ул. Примерная, 10</li>
+                        <li><i class="fas fa-clock"></i> Пн-Пт: 10:00 - 20:00</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 EngiNeo. Все права защищены.</p>
+                <div class="footer-links">
+                    <a href="#">Политика конфиденциальности</a>
+                    <a href="#">Договор оферты</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

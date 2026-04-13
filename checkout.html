@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оформление заказа - EngiNeo</title>
+    <link rel="icon" type="image/png" href="image/logo.png">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Шапка сайта -->
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">
+                <img src="image/logo.png" alt="EngiNeo">
+                <span>EngiNeo</span>
+            </div>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Главная</a>
+                <a href="catalog.html" class="nav-link">Каталог</a>
+                <a href="services.html" class="nav-link">Услуги</a>
+                <a href="about.html" class="nav-link">О нас</a>
+                <a href="contact.html" class="nav-link">Контакты</a>
+            </nav>
+            <div class="header-actions">
+                <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <a href="cart.html" class="cart-btn">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cartCount">0</span>
+                </a>
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Мобильное меню -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="index.html" class="mobile-nav-link">Главная</a>
+        <a href="catalog.html" class="mobile-nav-link">Каталог</a>
+        <a href="services.html" class="mobile-nav-link">Услуги</a>
+        <a href="about.html" class="mobile-nav-link">О нас</a>
+        <a href="contact.html" class="mobile-nav-link">Контакты</a>
+    </div>
+
+    <!-- Заголовок страницы -->
+    <section class="page-header">
+        <div class="container">
+            <h1>Оформление заказа</h1>
+            <nav class="breadcrumb">
+                <a href="index.html">Главная</a>
+                <span>/</span>
+                <a href="cart.html">Корзина</a>
+                <span>/</span>
+                <span>Оформление заказа</span>
+            </nav>
+        </div>
+    </section>
+
+    <!-- Форма оформления заказа -->
+    <section class="checkout-section">
+        <div class="container">
+            <form class="checkout-form" id="checkoutForm">
+                <div class="checkout-layout">
+                    <!-- Основная форма -->
+                    <div class="checkout-main">
+                        <!-- Контактные данные -->
+                        <div class="checkout-block">
+                            <h2><span class="block-number">1</span> Контактные данные</h2>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="firstName">Имя *</label>
+                                    <input type="text" id="firstName" name="firstName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="lastName">Фамилия *</label>
+                                    <input type="text" id="lastName" name="lastName" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="email">Email *</label>
+                                    <input type="email" id="email" name="email" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">Телефон *</label>
+                                    <input type="tel" id="phone" name="phone" required placeholder="+7 (___) ___-__-__">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Адрес доставки -->
+                        <div class="checkout-block">
+                            <h2><span class="block-number">2</span> Адрес доставки</h2>
+                            <div class="delivery-type">
+                                <label class="delivery-option">
+                                    <input type="radio" name="deliveryType" value="pickup" checked>
+                                    <span class="option-card">
+                                        <i class="fas fa-store"></i>
+                                        <span>Самовывоз</span>
+                                        <small>Бесплатно</small>
+                                    </span>
+                                </label>
+                                <label class="delivery-option">
+                                    <input type="radio" name="deliveryType" value="courier">
+                                    <span class="option-card">
+                                        <i class="fas fa-truck"></i>
+                                        <span>Курьер</span>
+                                        <small>от 300 ₽</small>
+                                    </span>
+                                </label>
+                                <label class="delivery-option">
+                                    <input type="radio" name="deliveryType" value="post">
+                                    <span class="option-card">
+                                        <i class="fas fa-box"></i>
+                                        <span>Почта</span>
+                                        <small>от 500 ₽</small>
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="address">Адрес *</label>
+                                <input type="text" id="address" name="address" placeholder="Город, улица, дом, квартира">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="city">Город *</label>
+                                    <input type="text" id="city" name="city" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="postalCode">Индекс</label>
+                                    <input type="text" id="postalCode" name="postalCode" placeholder="______">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="comment">Комментарий к заказу</label>
+                                <textarea id="comment" name="comment" rows="3" placeholder="Дополнительная информация по доставке"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Способ оплаты -->
+                        <div class="checkout-block">
+                            <h2><span class="block-number">3</span> Способ оплаты</h2>
+                            <div class="payment-type">
+                                <label class="payment-option">
+                                    <input type="radio" name="paymentType" value="card" checked>
+                                    <span class="option-card">
+                                        <i class="fas fa-credit-card"></i>
+                                        <span>Банковской картой</span>
+                                    </span>
+                                </label>
+                                <label class="payment-option">
+                                    <input type="radio" name="paymentType" value="cash">
+                                    <span class="option-card">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                        <span>При получении</span>
+                                    </span>
+                                </label>
+                                <label class="payment-option">
+                                    <input type="radio" name="paymentType" value="invoice">
+                                    <span class="option-card">
+                                        <i class="fas fa-file-invoice"></i>
+                                        <span>Счёт для юр. лиц</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Дополнительные опции -->
+                        <div class="checkout-block">
+                            <h2><span class="block-number">4</span> Дополнительные опции</h2>
+                            <div class="additional-options">
+                                <label class="checkbox-option">
+                                    <input type="checkbox" name="giftWrap" id="giftWrap">
+                                    <span class="checkmark"></span>
+                                    <span>Подарочная упаковка</span>
+                                    <span class="option-price">+200 ₽</span>
+                                </label>
+                                <label class="checkbox-option">
+                                    <input type="checkbox" name="qualityCheck" id="qualityCheck">
+                                    <span class="checkmark"></span>
+                                    <span>Расширенная проверка качества</span>
+                                    <span class="option-price">+500 ₽</span>
+                                </label>
+                                <label class="checkbox-option">
+                                    <input type="checkbox" name="express" id="express">
+                                    <span class="checkmark"></span>
+                                    <span>Срочное изготовление</span>
+                                    <span class="option-price">+30%</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Итоговая панель -->
+                    <div class="checkout-sidebar">
+                        <div class="order-summary">
+                            <h3>Ваш заказ</h3>
+                            <div class="order-items" id="orderItems">
+                                <!-- Товары загружаются через JS -->
+                            </div>
+                            <div class="summary-row">
+                                <span>Товары</span>
+                                <span id="checkoutSubtotal">0 ₽</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Доставка</span>
+                                <span id="checkoutShipping">0 ₽</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Доп. опции</span>
+                                <span id="checkoutOptions">0 ₽</span>
+                            </div>
+                            <div class="summary-total">
+                                <span>Итого:</span>
+                                <span id="checkoutTotal">0 ₽</span>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-full btn-large">
+                                <i class="fas fa-check"></i>
+                                Оформить заказ
+                            </button>
+                            <p class="checkout-note">
+                                <i class="fas fa-shield-alt"></i>
+                                Ваши данные защищены и не будут переданы третьим лицам
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Модальное окно подтверждения -->
+    <div class="modal" id="orderSuccessModal">
+        <div class="modal-content">
+            <div class="modal-icon success">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2>Заказ успешно оформлен!</h2>
+            <p>Номер вашего заказа: <strong id="orderNumber">#0000</strong></p>
+            <p>На указанный email отправлено подтверждение заказа.</p>
+            <p>Наш менеджер свяжется с вами в ближайшее время.</p>
+            <div class="modal-actions">
+                <a href="index.html" class="btn btn-primary">На главную</a>
+                <a href="orders.html" class="btn btn-outline">Мои заказы</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Футер -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <div class="footer-logo">
+                        <img src="image/logo.png" alt="EngiNeo">
+                        <span>EngiNeo</span>
+                    </div>
+                    <p>Профессиональная студия 3D печати. Создаём ваши идеи в реальность.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-vk"></i></a>
+                        <a href="#"><i class="fab fa-telegram"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h4>Каталог</h4>
+                    <ul>
+                        <li><a href="catalog.html?category=figurines">Фигурки</a></li>
+                        <li><a href="catalog.html?category=decoration">Декор</a></li>
+                        <li><a href="catalog.html?category=technical">Технические детали</a></li>
+                        <li><a href="catalog.html?category=accessories">Аксессуары</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Услуги</h4>
+                    <ul>
+                        <li><a href="services.html#modeling">3D моделирование</a></li>
+                        <li><a href="services.html#scanning">3D сканирование</a></li>
+                        <li><a href="services.html#postprocessing">Постобработка</a></li>
+                        <li><a href="services.html#design">Дизайн</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Контакты</h4>
+                    <ul class="contact-list">
+                        <li><i class="fas fa-phone"></i> +7 (999) 123-45-67</li>
+                        <li><i class="fas fa-envelope"></i> info@engineo.ru</li>
+                        <li><i class="fas fa-map-marker-alt"></i> Москва, ул. Примерная, 10</li>
+                        <li><i class="fas fa-clock"></i> Пн-Пт: 10:00 - 20:00</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 EngiNeo. Все права защищены.</p>
+                <div class="footer-links">
+                    <a href="#">Политика конфиденциальности</a>
+                    <a href="#">Договор оферты</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/checkout.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
