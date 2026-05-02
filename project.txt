@@ -1,0 +1,1724 @@
+================================================================================
+PROJECT STRUCTURE - EngiNeo 3D Print Studio
+================================================================================
+
+--- package.json ---
+{
+  "name": "3d-print-pro-server",
+  "version": "1.0.0",
+  "description": "Сервер для студии 3D печати на Node.js + TypeScript",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/morgan": "^1.9.9",
+    "@types/multer": "^1.4.11",
+    "@types/node": "^20.10.6",
+    "@types/uuid": "^9.0.7",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  },
+  "keywords": ["3d-print", "express", "typescript", "api"],
+  "author": "",
+  "license": "MIT"
+}
+
+--- tsconfig.json ---
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "lib": ["ES2022"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
+
+--- .env.example ---
+PORT=3000
+NODE_ENV=development
+CORS_ORIGIN=http://localhost:5500
+UPLOAD_DIR=./uploads
+
+--- .gitignore ---
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Uploads (if any)
+uploads/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+================================================================================
+SERVER (TypeScript)
+================================================================================
+
+--- src/server.ts ---
+// ========================================
+// EngiNeo — основной сервер
+// ========================================
+
+import express, { Application, Request, Response } from 'express';
+import dotenv from 'dotenv';
+import morgan from 'morgan';
+import helmet from 'helmet';
+import cors from 'cors';
+import path from 'path';
+
+// Middleware
+import { corsMiddleware } from './middleware/cors';
+import { errorMiddleware, notFoundMiddleware, AppError } from './middleware/error';
+
+// Routes
+import productsRouter from './routes/products';
+import ordersRouter from './routes/orders';
+import promoRouter from './routes/promo';
+import contactRouter from './routes/contact';
+import uploadRouter from './routes/upload';
+
+// Types
+import { ApiResponse } from './types';
+
+dotenv.config();
+
+const app: Application = express();
+const PORT = parseInt(process.env.PORT || '3000', 10);
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// ========================================
+// Global middleware
+// ========================================
+
+// Безопасность заголовков
+app.use(helmet());
+
+// CORS
+app.use(cors());
+app.use(corsMiddleware);
+
+// Логирование
+if (NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+} else {
+  app.use(morgan('combined'));
+}
+
+// Парсинг JSON
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Статические файлы (клиентский фронтенд)
+app.use(express.static(path.join(__dirname, '..')));
+
+// ========================================
+// API маршруты
+// ========================================
+
+app.use('/api/products', productsRouter);
+app.use('/api/orders', ordersRouter);
+app.use('/api/promo', promoRouter);
+app.use('/api/contact', contactRouter);
+app.use('/api/upload', uploadRouter);
+
+// Health check
+app.get('/api/health', (_req: Request, res: Response): void => {
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      status: 'ok',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      environment: NODE_ENV,
+    },
+  };
+  res.json(response);
+});
+
+// ========================================
+// SPA fallback — отдаём index.html для любых других маршрутов
+// ========================================
+app.get('*', (_req: Request, res: Response): void => {
+  res.sendFile(path.join(__dirname, '..', 'index.html'));
+});
+
+// ========================================
+// Обработка ошибок
+// ========================================
+app.use(notFoundMiddleware);
+app.use(errorMiddleware);
+
+// ========================================
+// Запуск сервера
+// ========================================
+app.listen(PORT, '0.0.0.0', (): void => {
+  console.log(`\n🚀 EngiNeo Server`);
+  console.log(`   Environment: ${NODE_ENV}`);
+  console.log(`   Port: http://localhost:${PORT}`);
+  console.log(`   API:    http://localhost:${PORT}/api/health\n`);
+});
+
+export default app;
+
+--- src/types/index.ts ---
+// ========================================
+// Типы данных для EngiNeo API
+// ========================================
+
+export interface Product {
+  id: number;
+  title: string;
+  category: string;
+  categoryLabel: string;
+  price: number;
+  image: string;
+  badge?: string;
+  materials: string[];
+  sizes: string[];
+  colors: string[];
+  rating: number;
+  reviews: number;
+  description: string;
+}
+
+export interface CartItem {
+  id: number;
+  title: string;
+  price: number;
+  image: string;
+  category: string;
+  options: {
+    material: string;
+    color: string;
+    size: string;
+  };
+  quantity: number;
+}
+
+export interface CustomerInfo {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+}
+
+export interface DeliveryInfo {
+  type: 'pickup' | 'courier' | 'post';
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  comment?: string;
+}
+
+export interface OrderOptions {
+  giftWrap: boolean;
+  qualityCheck: boolean;
+  express: boolean;
+}
+
+export interface Order {
+  id: string;
+  number: string;
+  date: string;
+  status: OrderStatus;
+  items: CartItem[];
+  customer: CustomerInfo;
+  delivery: DeliveryInfo;
+  payment: 'card' | 'cash' | 'invoice';
+  options: OrderOptions;
+  subtotal: number;
+  shipping: number;
+  optionsTotal: number;
+  total: number;
+}
+
+export type OrderStatus =
+  | 'pending'
+  | 'processing'
+  | 'printing'
+  | 'quality-check'
+  | 'ready'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled';
+
+export interface QuickOrderRequest {
+  name: string;
+  email: string;
+  phone: string;
+  message?: string;
+  files?: string[];
+}
+
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+  date: string;
+  status: 'new' | 'read' | 'replied';
+}
+
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+  pagination?: PaginationInfo;
+}
+
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PromoCode {
+  code: string;
+  discount: number;
+  freeShipping: boolean;
+  description: string;
+  active: boolean;
+  expiresAt?: string;
+}
+
+export interface FileUpload {
+  originalname: string;
+  filename: string;
+  path: string;
+  size: number;
+  mimetype: string;
+}
+
+--- src/db/database.ts ---
+// ========================================
+// In-memory база данных
+// ========================================
+
+import {
+  Order,
+  Product,
+  ContactMessage,
+  PromoCode,
+  OrderStatus,
+} from '../types';
+
+// ---------- Продукты ----------
+export const products: Product[] = [
+  {
+    id: 1,
+    title: 'Фигурка дракона',
+    category: 'figurines',
+    categoryLabel: 'Фигурки',
+    price: 1200,
+    image: 'fa-dragon',
+    badge: 'Хит',
+    materials: ['pla', 'petg', 'resin'],
+    sizes: ['medium', 'large'],
+    colors: ['Красный', 'Зелёный', 'Синий', 'Чёрный'],
+    rating: 5,
+    reviews: 24,
+    description: 'Детализированная фигурка дракона с расправленными крыльями',
+  },
+  {
+    id: 2,
+    title: 'Ваза геометрическая',
+    category: 'decoration',
+    categoryLabel: 'Декор',
+    price: 850,
+    image: 'fa-vase',
+    badge: 'Новинка',
+    materials: ['pla', 'petg'],
+    sizes: ['medium'],
+    colors: ['Белый', 'Серый', 'Бежевый'],
+    rating: 4.8,
+    reviews: 18,
+    description: 'Стильная ваза с геометрическим узором для современного интерьера',
+  },
+  {
+    id: 3,
+    title: 'Шестерня техническая',
+    category: 'technical',
+    categoryLabel: 'Технические детали',
+    price: 350,
+    image: 'fa-cog',
+    materials: ['abs', 'nylon', 'petg'],
+    sizes: ['small', 'medium'],
+    colors: ['Чёрный', 'Белый', 'Серый'],
+    rating: 4.9,
+    reviews: 42,
+    description: 'Прочная шестерня для механических устройств',
+  },
+  {
+    id: 4,
+    title: 'Подставка для наушников',
+    category: 'accessories',
+    categoryLabel: 'Аксессуары',
+    price: 950,
+    image: 'fa-headphones',
+    materials: ['pla', 'abs', 'petg'],
+    sizes: ['medium'],
+    colors: ['Чёрный', 'Белый', 'Красный', 'Синий'],
+    rating: 4.7,
+    reviews: 31,
+    description: 'Эргономичная подставка для игровых наушников',
+  },
+  {
+    id: 5,
+    title: 'Фигурка совы',
+    category: 'figurines',
+    categoryLabel: 'Фигурки',
+    price: 780,
+    image: 'fa-crow',
+    materials: ['pla', 'resin'],
+    sizes: ['small'],
+    colors: ['Коричневый', 'Серый', 'Белый'],
+    rating: 4.6,
+    reviews: 15,
+    description: 'Милая фигурка совы с большими глазами',
+  },
+  {
+    id: 6,
+    title: 'Кашпо для цветов',
+    category: 'decoration',
+    categoryLabel: 'Декор',
+    price: 650,
+    image: 'fa-leaf',
+    materials: ['pla', 'petg'],
+    sizes: ['small', 'medium'],
+    colors: ['Терракотовый', 'Зелёный', 'Серый'],
+    rating: 4.5,
+    reviews: 22,
+    description: 'Кашпо с дренажным отверстием для комнатных растений',
+  },
+  {
+    id: 7,
+    title: 'Корпус для электроники',
+    category: 'technical',
+    categoryLabel: 'Технические детали',
+    price: 550,
+    image: 'fa-microchip',
+    materials: ['abs', 'petg', 'nylon'],
+    sizes: ['small', 'medium'],
+    colors: ['Чёрный', 'Белый', 'Прозрачный'],
+    rating: 4.8,
+    reviews: 38,
+    description: 'Универсальный корпус для Arduino и Raspberry Pi',
+  },
+  {
+    id: 8,
+    title: 'Брелок с логотипом',
+    category: 'accessories',
+    categoryLabel: 'Аксессуары',
+    price: 200,
+    image: 'fa-key',
+    materials: ['pla', 'abs', 'flex'],
+    sizes: ['small'],
+    colors: ['Любой цвет'],
+    rating: 4.4,
+    reviews: 56,
+    description: 'Персонализированный брелок с вашим логотипом',
+  },
+  {
+    id: 9,
+    title: 'Фигурка рыцаря',
+    category: 'figurines',
+    categoryLabel: 'Фигурки',
+    price: 1450,
+    image: 'fa-chess-knight',
+    badge: 'Хит',
+    materials: ['resin', 'pla'],
+    sizes: ['medium'],
+    colors: ['Серебро', 'Золото', 'Сталь'],
+    rating: 4.9,
+    reviews: 28,
+    description: 'Детализированная фигурка средневекового рыцаря в доспехах',
+  },
+  {
+    id: 10,
+    title: 'Светильник луна',
+    category: 'decoration',
+    categoryLabel: 'Декор',
+    price: 1800,
+    image: 'fa-moon',
+    badge: 'Новинка',
+    materials: ['pla'],
+    sizes: ['large'],
+    colors: ['Белый', 'Жёлтый'],
+    rating: 5,
+    reviews: 12,
+    description: 'Настольный светильник в форме луны с LED подсветкой',
+  },
+  {
+    id: 11,
+    title: 'Кронштейн для монитора',
+    category: 'technical',
+    categoryLabel: 'Технические детали',
+    price: 1200,
+    image: 'fa-tv',
+    materials: ['abs', 'nylon', 'petg'],
+    sizes: ['large'],
+    colors: ['Чёрный', 'Серый'],
+    rating: 4.7,
+    reviews: 19,
+    description: 'Прочный кронштейн для крепления монитора до 27 дюймов',
+  },
+  {
+    id: 12,
+    title: 'Органайзер для кабелей',
+    category: 'accessories',
+    categoryLabel: 'Аксессуары',
+    price: 380,
+    image: 'fa-plug',
+    materials: ['pla', 'flex'],
+    sizes: ['small'],
+    colors: ['Чёрный', 'Белый', 'Серый'],
+    rating: 4.6,
+    reviews: 45,
+    description: 'Набор органайзеров для упорядочивания кабелей',
+  },
+  {
+    id: 13,
+    title: 'Игрушка динозавр',
+    category: 'toys',
+    categoryLabel: 'Игрушки',
+    price: 920,
+    image: 'fa-dragon',
+    materials: ['pla', 'petg'],
+    sizes: ['medium'],
+    colors: ['Зелёный', 'Синий', 'Красный'],
+    rating: 4.8,
+    reviews: 33,
+    description: 'Подвижная игрушка динозавра с шарнирными соединениями',
+  },
+  {
+    id: 14,
+    title: 'Кубик Рубика',
+    category: 'toys',
+    categoryLabel: 'Игрушки',
+    price: 450,
+    image: 'fa-dice',
+    materials: ['pla', 'abs'],
+    sizes: ['small'],
+    colors: ['Классический', 'Чёрный'],
+    rating: 4.5,
+    reviews: 27,
+    description: 'Классический кубик Рубика 3x3, напечатанный на 3D принтере',
+  },
+  {
+    id: 15,
+    title: 'Фигурка космонавта',
+    category: 'figurines',
+    categoryLabel: 'Фигурки',
+    price: 1100,
+    image: 'fa-user-astronaut',
+    materials: ['pla', 'resin'],
+    sizes: ['medium'],
+    colors: ['Белый', 'Серебро'],
+    rating: 4.7,
+    reviews: 21,
+    description: 'Фигурка космонавта в скафандре для коллекции',
+  },
+  {
+    id: 16,
+    title: 'Держатель для телефона',
+    category: 'accessories',
+    categoryLabel: 'Аксессуары',
+    price: 420,
+    image: 'fa-mobile-alt',
+    materials: ['pla', 'petg', 'flex'],
+    sizes: ['small'],
+    colors: ['Чёрный', 'Белый', 'Синий', 'Красный'],
+    rating: 4.6,
+    reviews: 52,
+    description: 'Регулируемая подставка для смартфона на рабочий стол',
+  },
+];
+
+// ---------- Заказы ----------
+export const orders: Order[] = [];
+
+// ---------- Сообщения ----------
+export const contactMessages: ContactMessage[] = [];
+
+// ---------- Промокоды ----------
+export const promoCodes: PromoCode[] = [
+  {
+    code: 'WELCOME10',
+    discount: 0.1,
+    freeShipping: false,
+    description: 'Скидка 10% на первый заказ',
+    active: true,
+  },
+  {
+    code: 'SUMMER20',
+    discount: 0.2,
+    freeShipping: false,
+    description: 'Летняя скидка 20%',
+    active: true,
+  },
+  {
+    code: 'FREESHIP',
+    discount: 0,
+    freeShipping: true,
+    description: 'Бесплатная доставка',
+    active: true,
+  },
+];
+
+// ---------- Счётчик ID заказов ----------
+let orderCounter = 0;
+
+// ---------- Утилиты ----------
+export function generateOrderNumber(): string {
+  orderCounter++;
+  const now = new Date();
+  const date = now.toISOString().slice(0, 10).replace(/-/g, '');
+  return `#${date}-${String(orderCounter).padStart(3, '0')}`;
+}
+
+export function saveOrder(order: Order): Order {
+  orders.push(order);
+  return order;
+}
+
+export function getOrderById(id: string): Order | undefined {
+  return orders.find((o) => o.id === id);
+}
+
+export function getOrdersByEmail(email: string): Order[] {
+  return orders.filter((o) => o.customer.email.toLowerCase() === email.toLowerCase());
+}
+
+export function updateOrderStatus(id: string, status: OrderStatus): Order | undefined {
+  const order = getOrderById(id);
+  if (order) {
+    order.status = status;
+  }
+  return order;
+}
+
+export function saveContactMessage(msg: ContactMessage): ContactMessage {
+  contactMessages.push(msg);
+  return msg;
+}
+
+export function getPromoCode(code: string): PromoCode | undefined {
+  return promoCodes.find(
+    (p) => p.code.toLowerCase() === code.toLowerCase() && p.active
+  );
+}
+
+--- src/middleware/cors.ts ---
+// ========================================
+// Middleware — CORS конфигурация
+// ========================================
+
+import { Request, Response, NextFunction } from 'express';
+
+export function corsMiddleware(req: Request, res: Response, next: NextFunction): void {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400');
+
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(204);
+    return;
+  }
+
+  next();
+}
+
+--- src/middleware/error.ts ---
+// ========================================
+// Middleware — обработка ошибок
+// ========================================
+
+import { Request, Response, NextFunction } from 'express';
+import { ApiResponse } from '../types';
+
+export class AppError extends Error {
+  public statusCode: number;
+  public isOperational: boolean;
+
+  constructor(message: string, statusCode: number) {
+    super(message);
+    this.statusCode = statusCode;
+    this.isOperational = true;
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
+export function errorMiddleware(
+  err: Error | AppError,
+  _req: Request,
+  res: Response,
+  _next: NextFunction
+): void {
+  const statusCode = (err as AppError).statusCode || 500;
+  const message = err.message || 'Внутренняя ошибка сервера';
+
+  const response: ApiResponse = {
+    success: false,
+    error: message,
+  };
+
+  res.status(statusCode).json(response);
+}
+
+export function notFoundMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  next(new AppError(`Маршрут не найден: ${req.originalUrl}`, 404));
+}
+
+--- src/routes/products.ts ---
+// ========================================
+// Маршруты — Продукты
+// ========================================
+
+import { Router, Request, Response, NextFunction } from 'express';
+import { products } from '../db/database';
+import { ApiResponse, Product } from '../types';
+import { AppError } from '../middleware/error';
+
+const router = Router();
+
+/**
+ * GET /api/products
+ * Получение всех продуктов с фильтрацией и пагинацией
+ */
+router.get('/', (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    let filtered = [...products];
+
+    // Фильтр по категории
+    const category = req.query.category as string | undefined;
+    if (category && category !== 'all') {
+      filtered = filtered.filter((p) => p.category === category);
+    }
+
+    // Фильтр по материалу
+    const material = req.query.material as string | undefined;
+    if (material) {
+      filtered = filtered.filter((p) => p.materials.includes(material));
+    }
+
+    // Фильтр по цене
+    const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice as string) : null;
+    const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : null;
+    if (minPrice !== null) filtered = filtered.filter((p) => p.price >= minPrice);
+    if (maxPrice !== null) filtered = filtered.filter((p) => p.price <= maxPrice);
+
+    // Поиск по названию
+    const search = req.query.search as string | undefined;
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.title.toLowerCase().includes(searchLower) ||
+          p.description.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Сортировка
+    const sort = (req.query.sort as string) || 'popular';
+    switch (sort) {
+      case 'price-asc':
+        filtered.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-desc':
+        filtered.sort((a, b) => b.price - a.price);
+        break;
+      case 'name':
+        filtered.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case 'newest':
+        filtered.sort((a, b) => b.id - a.id);
+        break;
+      default:
+        filtered.sort((a, b) => b.rating - a.rating);
+    }
+
+    // Пагинация
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 12;
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / limit);
+    const start = (page - 1) * limit;
+    const paginated = filtered.slice(start, start + limit);
+
+    const response: ApiResponse<Product[]> = {
+      success: true,
+      data: paginated,
+      pagination: { page, limit, total, totalPages },
+    };
+
+    res.json(response);
+  } catch (err) {
+    next(new AppError('Ошибка при получении продуктов', 500));
+  }
+});
+
+/**
+ * GET /api/products/:id
+ * Получение одного продукта по ID
+ */
+router.get('/:id', (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const id = parseInt(req.params.id);
+    const product = products.find((p) => p.id === id);
+
+    if (!product) {
+      throw new AppError('Продукт не найден', 404);
+    }
+
+    const response: ApiResponse<Product> = {
+      success: true,
+      data: product,
+    };
+
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/products/categories
+ * Получение списка категорий
+ */
+router.get('/categories', (_req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const categoriesMap = new Map<string, string>();
+    products.forEach((p) => {
+      if (!categoriesMap.has(p.category)) {
+        categoriesMap.set(p.category, p.categoryLabel);
+      }
+    });
+
+    const categories = Array.from(categoriesMap.entries()).map(([id, label]) => ({
+      id,
+      label,
+      count: products.filter((p) => p.category === id).length,
+    }));
+
+    const response: ApiResponse = {
+      success: true,
+      data: categories,
+    };
+
+    res.json(response);
+  } catch (err) {
+    next(new AppError('Ошибка при получении категорий', 500));
+  }
+});
+
+export default router;
+
+--- src/routes/orders.ts ---
+// ========================================
+// Маршруты — Заказы
+// ========================================
+
+import { Router, Request, Response, NextFunction } from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import {
+  saveOrder,
+  getOrderById,
+  getOrdersByEmail,
+  updateOrderStatus,
+  generateOrderNumber,
+} from '../db/database';
+import {
+  ApiResponse,
+  Order,
+  OrderStatus,
+} from '../types';
+import { AppError } from '../middleware/error';
+
+const router = Router();
+
+/**
+ * POST /api/orders
+ * Создание нового заказа
+ */
+router.post('/', (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const {
+      items,
+      customer,
+      delivery,
+      payment,
+      options,
+      subtotal,
+      shipping,
+      optionsTotal,
+      total,
+    } = req.body as Partial<Order>;
+
+    // Валидация
+    if (!items || items.length === 0) {
+      throw new AppError('Корзина пуста', 400);
+    }
+    if (!customer?.email || !customer?.phone) {
+      throw new AppError('Укажите email и телефон', 400);
+    }
+    if (!delivery?.type) {
+      throw new AppError('Выберите способ доставки', 400);
+    }
+    if (!payment) {
+      throw new AppError('Выберите способ оплаты', 400);
+    }
+
+    const order: Order = {
+      id: uuidv4(),
+      number: generateOrderNumber(),
+      date: new Date().toISOString(),
+      status: 'pending',
+      items: items,
+      customer: customer,
+      delivery: delivery,
+      payment: payment,
+      options: options || { giftWrap: false, qualityCheck: false, express: false },
+      subtotal: subtotal || 0,
+      shipping: shipping || 0,
+      optionsTotal: optionsTotal || 0,
+      total: total || 0,
+    };
+
+    const savedOrder = saveOrder(order);
+
+    const response: ApiResponse<Order> = {
+      success: true,
+      data: savedOrder,
+      message: 'Заказ успешно создан',
+    };
+
+    res.status(201).json(response);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/orders/:id
+ * Получение заказа по ID
+ */
+router.get('/:id', (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const order = getOrderById(req.params.id);
+
+    if (!order) {
+      throw new AppError('Заказ не найден', 404);
+    }
+
+    const response: ApiResponse<Order> = {
+      success: true,
+      data: order,
+    };
+
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/orders/email/:email
+ * Получение всех заказов по email
+ */
+router.get('/email/:email', (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const orders = getOrdersByEmail(req.params.email);
+
+    const response: ApiResponse<Order[]> = {
+      success: true,
+      data: orders,
+    };
+
+    res.json(response);
+  } catch (err) {
+    next(new AppError('Ошибка при получении заказов', 500));
+  }
+});
+
+/**
+ * PATCH /api/orders/:id/status
+ * Обновление статуса заказа
+ */
+router.patch('/:id/status', (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const { status } = req.body as { status?: OrderStatus };
+
+    if (!status) {
+      throw new AppError('Укажите статус', 400);
+    }
+
+    const validStatuses: OrderStatus[] = [
+      'pending',
+      'processing',
+      'printing',
+      'quality-check',
+      'ready',
+      'shipped',
+      'delivered',
+      'cancelled',
+    ];
+
+    if (!validStatuses.includes(status)) {
+      throw new AppError('Неверный статус', 400);
+    }
+
+    const order = updateOrderStatus(req.params.id, status);
+
+    if (!order) {
+      throw new AppError('Заказ не найден', 404);
+    }
+
+    const response: ApiResponse<Order> = {
+      success: true,
+      data: order,
+      message: 'Статус заказа обновлён',
+    };
+
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default router;
+
+--- src/routes/promo.ts ---
+// ========================================
+// Маршруты — Промокоды
+// ========================================
+
+import { Router, Request, Response, NextFunction } from 'express';
+import { getPromoCode } from '../db/database';
+import { ApiResponse, PromoCode } from '../types';
+import { AppError } from '../middleware/error';
+
+const router = Router();
+
+/**
+ * GET /api/promo/:code
+ * Проверка и получение информации о промокоде
+ */
+router.get('/:code', (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const code = req.params.code.trim().toUpperCase();
+
+    if (!code) {
+      throw new AppError('Укажите промокод', 400);
+    }
+
+    const promo = getPromoCode(code);
+
+    if (!promo) {
+      const response: ApiResponse = {
+        success: false,
+        error: 'Неверный промокод',
+      };
+      res.status(404).json(response);
+      return;
+    }
+
+    // Проверка срока действия
+    if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) {
+      const response: ApiResponse = {
+        success: false,
+        error: 'Промокод истёк',
+      };
+      res.status(410).json(response);
+      return;
+    }
+
+    const response: ApiResponse<PromoCode> = {
+      success: true,
+      data: promo,
+    };
+
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default router;
+
+--- src/routes/contact.ts ---
+// ========================================
+// Маршруты — Контактные сообщения
+// ========================================
+
+import { Router, Request, Response, NextFunction } from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import { saveContactMessage } from '../db/database';
+import { ApiResponse, ContactMessage } from '../types';
+import { AppError } from '../middleware/error';
+
+const router = Router();
+
+/**
+ * POST /api/contact
+ * Отправка контактного сообщения
+ */
+router.post('/', (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const { name, email, phone, subject, message } = req.body;
+
+    // Валидация
+    if (!name || !email || !subject || !message) {
+      throw new AppError('Заполните все обязательные поля', 400);
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new AppError('Неверный формат email', 400);
+    }
+
+    const contactMsg: ContactMessage = {
+      id: uuidv4(),
+      name,
+      email,
+      phone,
+      subject,
+      message,
+      date: new Date().toISOString(),
+      status: 'new',
+    };
+
+    saveContactMessage(contactMsg);
+
+    const response: ApiResponse<ContactMessage> = {
+      success: true,
+      data: contactMsg,
+      message: 'Сообщение успешно отправлено',
+    };
+
+    res.status(201).json(response);
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default router;
+
+--- src/routes/upload.ts ---
+// ========================================
+// Маршруты — Загрузка файлов
+// ========================================
+
+import { Router, Request, Response, NextFunction } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
+import { ApiResponse, FileUpload } from '../types';
+import { AppError } from '../middleware/error';
+
+const router = Router();
+
+// Настройка multer для загрузки файлов
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const uploadDir = process.env.UPLOAD_DIR || './uploads';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (_req, file, cb) => {
+    const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
+  },
+});
+
+const fileFilter = (
+  _req: Request,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+): void => {
+  const allowedTypes = [
+    '.stl',
+    '.obj',
+    '.3mf',
+    '.step',
+    '.stp',
+    '.ply',
+    '.amf',
+  ];
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  if (allowedTypes.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new AppError('Неподдерживаемый формат файла. Допустимы: STL, OBJ, 3MF, STEP, PLY, AMF', 400));
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50 MB
+  },
+});
+
+/**
+ * POST /api/upload
+ * Загрузка 3D файла
+ */
+router.post(
+  '/',
+  upload.array('files', 5),
+  (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const files = req.files as Express.Multer.File[];
+
+      if (!files || files.length === 0) {
+        throw new AppError('Файлы не загружены', 400);
+      }
+
+      const uploadedFiles: FileUpload[] = files.map((file) => ({
+        originalname: file.originalname,
+        filename: file.filename,
+        path: file.path,
+        size: file.size,
+        mimetype: file.mimetype,
+      }));
+
+      const response: ApiResponse<FileUpload[]> = {
+        success: true,
+        data: uploadedFiles,
+        message: `Загружено файлов: ${files.length}`,
+      };
+
+      res.status(201).json(response);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+export default router;
+
+================================================================================
+CLIENT (HTML + CSS + JavaScript)
+================================================================================
+
+--- index.html ---
+(ПОЛНЫЙ КОД - см. оригинальный файл, 255 строк)
+
+--- catalog.html ---
+(Аналогичная структура с фильтрами и товарами)
+
+--- cart.html ---
+(Страница корзины с товарами и итоговой суммой)
+
+--- checkout.html ---
+(Форма оформления заказа с доставкой и оплатой)
+
+--- contact.html ---
+(Форма обратной связи)
+
+--- about.html ---
+(Информация о компании, команде, оборудовании)
+
+--- services.html ---
+(Список услуг с ценами)
+
+================================================================================
+FRONTEND JavaScript
+================================================================================
+
+--- js/data.js ---
+// ========================================
+// Данные о продуктах (продублированы для клиента)
+// ========================================
+
+const products = [
+    { id: 1, title: "Фигурка дракона", category: "figurines", categoryLabel: "Фигурки", price: 1200, image: "fa-dragon", badge: "Хит", materials: ["pla", "petg", "resin"], sizes: ["medium", "large"], colors: ["Красный", "Зелёный", "Синий", "Чёрный"], rating: 5, reviews: 24, description: "Детализированная фигурка дракона с расправленными крыльями" },
+    { id: 2, title: "Ваза геометрическая", category: "decoration", categoryLabel: "Декор", price: 850, image: "fa-vase", badge: "Новинка", materials: ["pla", "petg"], sizes: ["medium"], colors: ["Белый", "Серый", "Бежевый"], rating: 4.8, reviews: 18, description: "Стильная ваза с геометрическим узором" },
+    { id: 3, title: "Шестерня техническая", category: "technical", categoryLabel: "Технические детали", price: 350, image: "fa-cog", materials: ["abs", "nylon", "petg"], sizes: ["small", "medium"], colors: ["Чёрный", "Белый", "Серый"], rating: 4.9, reviews: 42, description: "Прочная шестерня для механических устройств" },
+    { id: 4, title: "Подставка для наушников", category: "accessories", categoryLabel: "Аксессуары", price: 950, image: "fa-headphones", materials: ["pla", "abs", "petg"], sizes: ["medium"], colors: ["Чёрный", "Белый", "Красный", "Синий"], rating: 4.7, reviews: 31, description: "Эргономичная подставка для игровых наушников" },
+    { id: 5, title: "Фигурка совы", category: "figurines", categoryLabel: "Фигурки", price: 780, image: "fa-crow", materials: ["pla", "resin"], sizes: ["small"], colors: ["Коричневый", "Серый", "Белый"], rating: 4.6, reviews: 15, description: "Милая фигурка совы" },
+    { id: 6, title: "Кашпо для цветов", category: "decoration", categoryLabel: "Декор", price: 650, image: "fa-leaf", materials: ["pla", "petg"], sizes: ["small", "medium"], colors: ["Терракотовый", "Зелёный", "Серый"], rating: 4.5, reviews: 22, description: "Кашпо с дренажным отверстием" },
+    { id: 7, title: "Корпус для электроники", category: "technical", categoryLabel: "Технические детали", price: 550, image: "fa-microchip", materials: ["abs", "petg", "nylon"], sizes: ["small", "medium"], colors: ["Чёрный", "Белый", "Прозрачный"], rating: 4.8, reviews: 38, description: "Универсальный корпус для Arduino и Raspberry Pi" },
+    { id: 8, title: "Брелок с логотипом", category: "accessories", categoryLabel: "Аксессуары", price: 200, image: "fa-key", materials: ["pla", "abs", "flex"], sizes: ["small"], colors: ["Любой цвет"], rating: 4.4, reviews: 56, description: "Персонализированный брелок с вашим логотипом" },
+    { id: 9, title: "Фигурка рыцаря", category: "figurines", categoryLabel: "Фигурки", price: 1450, image: "fa-chess-knight", badge: "Хит", materials: ["resin", "pla"], sizes: ["medium"], colors: ["Серебро", "Золото", "Сталь"], rating: 4.9, reviews: 28, description: "Детализированная фигурка средневекового рыцаря" },
+    { id: 10, title: "Светильник луна", category: "decoration", categoryLabel: "Декор", price: 1800, image: "fa-moon", badge: "Новинка", materials: ["pla"], sizes: ["large"], colors: ["Белый", "Жёлтый"], rating: 5, reviews: 12, description: "Настольный светильник в форме луны с LED подсветкой" },
+    { id: 11, title: "Кронштейн для монитора", category: "technical", categoryLabel: "Технические детали", price: 1200, image: "fa-tv", materials: ["abs", "nylon", "petg"], sizes: ["large"], colors: ["Чёрный", "Серый"], rating: 4.7, reviews: 19, description: "Прочный кронштейн для монитора до 27 дюймов" },
+    { id: 12, title: "Органайзер для кабелей", category: "accessories", categoryLabel: "Аксессуары", price: 380, image: "fa-plug", materials: ["pla", "flex"], sizes: ["small"], colors: ["Чёрный", "Белый", "Серый"], rating: 4.6, reviews: 45, description: "Набор органайзеров для кабелей" },
+    { id: 13, title: "Игрушка динозавр", category: "toys", categoryLabel: "Игрушки", price: 920, image: "fa-dragon", materials: ["pla", "petg"], sizes: ["medium"], colors: ["Зелёный", "Синий", "Красный"], rating: 4.8, reviews: 33, description: "Подвижная игрушка динозавра с шарнирными соединениями" },
+    { id: 14, title: "Кубик Рубика", category: "toys", categoryLabel: "Игрушки", price: 450, image: "fa-dice", materials: ["pla", "abs"], sizes: ["small"], colors: ["Классический", "Чёрный"], rating: 4.5, reviews: 27, description: "Классический кубик Рубика 3x3" },
+    { id: 15, title: "Фигурка космонавта", category: "figurines", categoryLabel: "Фигурки", price: 1100, image: "fa-user-astronaut", materials: ["pla", "resin"], sizes: ["medium"], colors: ["Белый", "Серебро"], rating: 4.7, reviews: 21, description: "Фигурка космонавта в скафандре" },
+    { id: 16, title: "Держатель для телефона", category: "accessories", categoryLabel: "Аксессуары", price: 420, image: "fa-mobile-alt", materials: ["pla", "petg", "flex"], sizes: ["small"], colors: ["Чёрный", "Белый", "Синий", "Красный"], rating: 4.6, reviews: 52, description: "Регулируемая подставка для смартфона" },
+];
+
+const categories = [
+    { id: "all", label: "Все категории", icon: "fa-th" },
+    { id: "figurines", label: "Фигурки", icon: "fa-chess-knight" },
+    { id: "decoration", label: "Декор", icon: "fa-home" },
+    { id: "technical", label: "Технические детали", icon: "fa-cog" },
+    { id: "accessories", label: "Аксессуары", icon: "fa-headphones" },
+    { id: "toys", label: "Игрушки", icon: "fa-gamepad" }
+];
+
+const materials = [
+    { id: "pla", label: "PLA", description: "Биоразлагаемый, для декора" },
+    { id: "petg", label: "PETG", description: "Прочный, универсальный" },
+    { id: "abs", label: "ABS", description: "Ударопрочный, для деталей" },
+    { id: "flex", label: "Flex", description: "Гибкий, резиноподобный" },
+    { id: "nylon", label: "Nylon", description: "Износостойкий, для шестерён" },
+    { id: "resin", label: "Resin", description: "Высокая детализация" }
+];
+
+const promoCodes = {
+    "WELCOME10": { discount: 0.1, description: "Скидка 10% на первый заказ" },
+    "SUMMER20": { discount: 0.2, description: "Летняя скидка 20%" },
+    "FREESHIP": { discount: 0, freeShipping: true, description: "Бесплатная доставка" }
+};
+
+--- js/api.js ---
+// ========================================
+// API клиент для общения с сервером
+// ========================================
+
+const API_BASE = 'http://localhost:3000/api';
+
+async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(url, options);
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+  }
+
+  return data;
+}
+
+export async function getProducts(params?: {
+  category?: string;
+  material?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  search?: string;
+  sort?: string;
+  page?: number;
+  limit?: number;
+}) {
+  const query = new URLSearchParams();
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        query.append(key, String(value));
+      }
+    });
+  }
+  return fetchJson(`${API_BASE}/products?${query.toString()}`);
+}
+
+export async function getProductById(id: number) {
+  return fetchJson(`${API_BASE}/products/${id}`);
+}
+
+export async function getProductCategories() {
+  return fetchJson(`${API_BASE}/products/categories`);
+}
+
+export async function createOrder(orderData: Record<string, unknown>) {
+  return fetchJson(`${API_BASE}/orders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(orderData),
+  });
+}
+
+export async function checkPromoCode(code: string) {
+  return fetchJson(`${API_BASE}/promo/${encodeURIComponent(code)}`);
+}
+
+export async function sendContactMessage(data: Record<string, unknown>) {
+  return fetchJson(`${API_BASE}/contact`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function uploadFiles(files: File[]) {
+  const formData = new FormData();
+  files.forEach((file) => formData.append('files', file));
+
+  return fetchJson(`${API_BASE}/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+export async function healthCheck() {
+  return fetchJson(`${API_BASE}/health`);
+}
+
+--- js/cart.js ---
+// ========================================
+// Корзина покупок (localStorage)
+// ========================================
+
+class Cart {
+    constructor() {
+        this.items = [];
+        this.load();
+        this.updateCartCount();
+    }
+
+    load() {
+        const saved = localStorage.getItem('cart');
+        if (saved) {
+            try {
+                this.items = JSON.parse(saved);
+            } catch (e) {
+                this.items = [];
+            }
+        }
+    }
+
+    save() {
+        localStorage.setItem('cart', JSON.stringify(this.items));
+        this.updateCartCount();
+    }
+
+    add(productId, options = {}) {
+        const product = products.find(p => p.id === productId);
+        if (!product) return false;
+
+        const existingIndex = this.items.findIndex(item => 
+            item.id === productId && 
+            JSON.stringify(item.options) === JSON.stringify(options)
+        );
+
+        if (existingIndex !== -1) {
+            this.items[existingIndex].quantity += 1;
+        } else {
+            this.items.push({
+                id: product.id,
+                title: product.title,
+                price: product.price,
+                image: product.image,
+                category: product.category,
+                options: {
+                    material: options.material || product.materials[0],
+                    color: options.color || product.colors[0],
+                    size: options.size || product.sizes[0]
+                },
+                quantity: 1
+            });
+        }
+
+        this.save();
+        this.showNotification('Товар добавлен в корзину', 'success');
+        return true;
+    }
+
+    remove(index) {
+        this.items.splice(index, 1);
+        this.save();
+    }
+
+    updateQuantity(index, quantity) {
+        if (quantity < 1) {
+            this.remove(index);
+            return;
+        }
+        this.items[index].quantity = quantity;
+        this.save();
+    }
+
+    getSubtotal() {
+        return this.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    }
+
+    getTotalItems() {
+        return this.items.reduce((sum, item) => sum + item.quantity, 0);
+    }
+
+    applyPromoCode(code) {
+        const promo = promoCodes[code.toUpperCase()];
+        if (!promo) {
+            return { valid: false, message: 'Неверный промокод' };
+        }
+        return { valid: true, promo };
+    }
+
+    getShipping(deliveryType) {
+        const shippingRates = {
+            pickup: 0,
+            courier: this.getSubtotal() > 5000 ? 0 : 300,
+            post: this.getSubtotal() > 3000 ? 0 : 500
+        };
+        return shippingRates[deliveryType] || 0;
+    }
+
+    updateCartCount() {
+        const countElements = document.querySelectorAll('#cartCount');
+        const totalItems = this.getTotalItems();
+        countElements.forEach(el => {
+            el.textContent = totalItems;
+            if (totalItems > 0) {
+                el.style.display = 'flex';
+            } else {
+                el.style.display = 'none';
+            }
+        });
+    }
+
+    showNotification(message, type = 'info') {
+        const existing = document.querySelector('.cart-notification');
+        if (existing) existing.remove();
+
+        const notification = document.createElement('div');
+        notification.className = `cart-notification ${type}`;
+        notification.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+            <span>${message}</span>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => notification.classList.add('show'), 10);
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+}
+
+const cart = new Cart();
+
+--- js/main.js ---
+// ========================================
+// Основной JavaScript
+// ========================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    initMobileMenu();
+    initThemeToggle();
+    loadPopularProducts();
+    animateCounters();
+    initFAQ();
+    initSmoothScroll();
+    initQuickOrderForm();
+});
+
+function initMobileMenu() {
+    const menuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    
+    if (!menuBtn || !mobileMenu) return;
+    
+    menuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('active');
+        const icon = menuBtn.querySelector('i');
+        icon.classList.toggle('fa-bars');
+        icon.classList.toggle('fa-times');
+    });
+}
+
+function initThemeToggle() {
+    const toggleBtn = document.getElementById('themeToggle');
+    if (!toggleBtn) return;
+    
+    const icon = toggleBtn.querySelector('i');
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
+    }
+    
+    toggleBtn.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        if (currentTheme === 'dark') {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('theme', 'light');
+            icon.classList.remove('fa-sun');
+            icon.classList.add('fa-moon');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('theme', 'dark');
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        }
+    });
+}
+
+function loadPopularProducts() {
+    const container = document.getElementById('popularProducts');
+    if (!container) return;
+    
+    const popular = products
+        .filter(p => p.badge === 'Хит' || p.rating >= 4.8)
+        .slice(0, 4);
+    
+    container.innerHTML = popular.map(product => createProductCard(product)).join('');
+    
+    container.querySelectorAll('.add-to-cart').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const productId = parseInt(e.target.closest('.product-card').dataset.id);
+            const product = products.find(p => p.id === productId);
+            if (product) {
+                cart.add(productId, {
+                    material: product.materials[0],
+                    color: product.colors[0],
+                    size: product.sizes[0]
+                });
+            }
+        });
+    });
+}
+
+function createProductCard(product) {
+    const badgeHTML = product.badge ? `<span class="product-badge">${product.badge}</span>` : '';
+    const optionsHTML = `
+        <div class="product-options">
+            <span class="product-option">${getMaterialLabel(product.materials[0])}</span>
+            <span class="product-option">${product.colors[0]}</span>
+        </div>
+    `;
+    
+    return `
+        <div class="product-card" data-id="${product.id}">
+            <div class="product-image">
+                ${badgeHTML}
+                <i class="fas ${product.image}"></i>
+            </div>
+            <div class="product-info">
+                <span class="product-category">${product.categoryLabel}</span>
+                <h3 class="product-title">${product.title}</h3>
+                ${optionsHTML}
+                <div class="product-footer">
+                    <span class="product-price">${product.price} <small>₽</small></span>
+                    <button class="add-to-cart" aria-label="Добавить в корзину">
+                        <i class="fas fa-cart-plus"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function getMaterialLabel(materialId) {
+    const material = materials.find(m => m.id === materialId);
+    return material ? material.label : materialId;
+}
+
+function initQuickOrderForm() {
+    const form = document.getElementById('quickOrderForm');
+    if (!form) return;
+    
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        cart.showNotification('Заявка отправлена! Мы свяжемся с вами в течение 30 минут', 'success');
+        form.reset();
+    });
+}
+
+================================================================================
+CSS (styles.css - 2764 строки)
+================================================================================
+
+--- css/styles.css ---
+Содержит:
+- CSS переменные для светлой и тёмной темы
+- Сброс стилей и базовые стили
+- Стили хедера и навигации
+- Секция hero с анимацией куба
+- Секции features, popular-products, how-it-works
+- Стили корзины и оформления заказа
+- Стили каталога с фильтрами
+- Стили страниц услуг, о нас, контактов
+- Адаптивные медиа-запросы
+- Все анимации и переходы
+
+================================================================================
+END OF PROJECT FILE
+================================================================================

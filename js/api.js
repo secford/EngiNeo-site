@@ -2,7 +2,7 @@
 // API клиент для общения с сервером
 // ========================================
 
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = '/api';
 
 interface ApiResponse<T = unknown> {
   success: boolean;

@@ -34,11 +34,14 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // ========================================
 
 // Безопасность заголовков
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false, // Отключаем, чтобы стили и шрифты не блокировались
+  hsts: false,                  // Отключаем принудительный HTTPS для локальной сети
+}));
 
 // CORS
 app.use(cors());
-app.use(corsMiddleware);
+// app.use(corsMiddleware);
 
 // Логирование
 if (NODE_ENV === 'development') {
@@ -81,6 +84,9 @@ app.get('/api/health', (_req: Request, res: Response): void => {
 // ========================================
 // SPA fallback — отдаём index.html для любых других маршрутов
 // ========================================
+app.use('/css', express.static(path.join(__dirname, '..', 'css')));
+app.use('/js', express.static(path.join(__dirname, '..', 'js')));
+app.use('/image', express.static(path.join(__dirname, '..', 'image')));
 app.get('*', (_req: Request, res: Response): void => {
   res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
@@ -94,10 +100,11 @@ app.use(errorMiddleware);
 // ========================================
 // Запуск сервера
 // ========================================
-app.listen(PORT, (): void => {
+app.listen(PORT, '0.0.0.0', (): void => {
   console.log(`\n🚀 EngiNeo Server`);
   console.log(`   Environment: ${NODE_ENV}`);
   console.log(`   Port: http://localhost:${PORT}`);
+  console.log(`   Network: http://${require('os').networkInterfaces()['Ethernet']?.[0]?.address || require('os').networkInterfaces()['Wi-Fi']?.[0]?.address || '0.0.0.0'}:${PORT}`);
   console.log(`   API:    http://localhost:${PORT}/api/health\n`);
 });
 
