@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EngiNeo — Админ-панель</title>
+    <link rel="icon" type="image/png" href="image/logo.png">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">
+                <img src="image/logo.png" alt="EngiNeo">
+                <span>EngiNeo</span>
+            </div>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Главная</a>
+                <a href="catalog.html" class="nav-link">Каталог</a>
+                <a href="admin.html" class="nav-link active">Админ</a>
+            </nav>
+            <div class="header-actions">
+                <a href="my-orders.html" class="cart-btn">
+                    <i class="fas fa-box"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <section class="page-header">
+        <div class="container">
+            <h1>Админ-панель</h1>
+            <div class="breadcrumb">
+                <a href="index.html">Главная</a>
+                <span>/</span>
+                <span>Админ</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="admin-section">
+        <div class="container">
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-tab="orders">Заказы</button>
+                <button class="admin-tab" data-tab="products">Товары</button>
+                <button class="admin-tab" data-tab="stats">Статистика</button>
+            </div>
+
+            <div class="admin-content" id="tab-orders">
+                <div class="admin-filters">
+                    <select id="statusFilter">
+                        <option value="">Все статусы</option>
+                        <option value="pending">Новый</option>
+                        <option value="processing">В обработке</option>
+                        <option value="printing">Печать</option>
+                        <option value="quality-check">Проверка</option>
+                        <option value="ready">Готов</option>
+                        <option value="shipped">Отправлен</option>
+                        <option value="delivered">Доставлен</option>
+                        <option value="cancelled">Отменён</option>
+                    </select>
+                    <input type="text" id="searchOrder" placeholder="Поиск по номеру заказа...">
+                </div>
+                <div class="orders-table-container">
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th>№</th>
+                                <th>Дата</th>
+                                <th>Товар</th>
+                                <th>Кол-во</th>
+                                <th>Сумма</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <tr>
+                                <td colspan="7" class="loading">Загрузка...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="admin-content" id="tab-products" style="display: none;">
+                <div class="admin-filters">
+                    <select id="categoryFilter">
+                        <option value="">Все категории</option>
+                        <option value="figurines">Фигурки</option>
+                        <option value="decoration">Декор</option>
+                        <option value="technical">Технические</option>
+                        <option value="accessories">Аксессуары</option>
+                        <option value="toys">Игрушки</option>
+                    </select>
+                    <button class="btn btn-primary" id="addProductBtn">
+                        <i class="fas fa-plus"></i> Добавить товар
+                    </button>
+                </div>
+                <div class="products-grid" id="adminProductsGrid">
+                    <p>Загрузка товаров...</p>
+                </div>
+            </div>
+
+            <div class="admin-content" id="tab-stats" style="display: none;">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+                        <div class="stat-value" id="totalOrders">0</div>
+                        <div class="stat-label">Всего заказов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-ruble-sign"></i></div>
+                        <div class="stat-value" id="totalRevenue">0 ₽</div>
+                        <div class="stat-label">Общая выручка</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="stat-value" id="avgProfit">0 ₽</div>
+                        <div class="stat-label">Средняя прибыль</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-percentage"></i></div>
+                        <div class="stat-value" id="avgMargin">0%</div>
+                        <div class="stat-label">Средняя маржа</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="modal" id="orderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Заказ <span id="modalOrderNumber"></span></h2>
+                <button class="modal-close" onclick="closeOrderModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalOrderDetails">
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2024 EngiNeo. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/admin.js"></script>
+</body>
+</html>

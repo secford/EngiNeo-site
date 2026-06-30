@@ -1,0 +1,3207 @@
+===============================================
+ENGINEO PROJECT - COMPLETE SOURCE CODE
+===============================================
+
+===============================================
+SERVER.TS
+===============================================
+// ========================================
+// EngiNeo — основной сервер
+// ========================================
+
+import express, { Application, Request, Response } from 'express';
+import dotenv from 'dotenv';
+import morgan from 'morgan';
+import helmet from 'helmet';
+import cors from 'cors';
+import path from 'path';
+
+// Middleware
+import { corsMiddleware } from './middleware/cors';
+import { errorMiddleware, notFoundMiddleware, AppError } from './middleware/error';
+
+// Routes
+import productsRouter from './routes/products';
+import ordersRouter from './routes/orders';
+import promoRouter from './routes/promo';
+import contactRouter from './routes/contact';
+import uploadRouter from './routes/upload';
+
+// Types
+import { ApiResponse } from './types';
+
+dotenv.config();
+
+const app: Application = express();
+const PORT = parseInt(process.env.PORT || '3000', 10);
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// ========================================
+// Global middleware
+// ========================================
+
+// Безопасность заголовков
+app.use(helmet({
+  contentSecurityPolicy: false, // Отключаем, чтобы стили и шрифты не блокировались
+  hsts: false,                  // Отключаем принудительный HTTPS для локальной сети
+}));
+
+// CORS
+app.use(cors());
+// app.use(corsMiddleware);
+
+// Логирование
+if (NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+} else {
+  app.use(morgan('combined'));
+}
+
+// Парсинг JSON
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Статические файлы (клиентский фронтенд)
+app.use(express.static(path.join(__dirname, '..')));
+
+// ========================================
+// API маршруты
+// ========================================
+
+app.use('/api/products', productsRouter);
+app.use('/api/orders', ordersRouter);
+app.use('/api/promo', promoRouter);
+app.use('/api/contact', contactRouter);
+app.use('/api/upload', uploadRouter);
+
+// Health check
+app.get('/api/health', (_req: Request, res: Response): void => {
+  const response: ApiResponse = {
+    success: true,
+    data: {
+      status: 'ok',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      environment: NODE_ENV,
+    },
+  };
+  res.json(response);
+});
+
+// ========================================
+// SPA fallback — отдаём index.html для любых других маршрутов
+// ========================================
+app.use('/css', express.static(path.join(__dirname, '..', 'css')));
+app.use('/js', express.static(path.join(__dirname, '..', 'js')));
+app.use('/image', express.static(path.join(__dirname, '..', 'image')));
+app.get('*', (_req: Request, res: Response): void => {
+  res.sendFile(path.join(__dirname, '..', 'index.html'));
+});
+
+// ========================================
+// Обработка ошибок
+// ========================================
+app.use(notFoundMiddleware);
+app.use(errorMiddleware);
+
+// ========================================
+// Запуск сервера
+// ========================================
+app.listen(PORT, '0.0.0.0', (): void => {
+  console.log(`\n🚀 EngiNeo Server`);
+  console.log(`   Environment: ${NODE_ENV}`);
+  console.log(`   Port: http://localhost:${PORT}`);
+  console.log(`   Network: http://${require('os').networkInterfaces()['Ethernet']?.[0]?.address || require('os').networkInterfaces()['Wi-Fi']?.[0]?.address || '0.0.0.0'}:${PORT}`);
+  console.log(`   API:    http://localhost:${PORT}/api/health\n`);
+});
+
+export default app;
+
+===============================================
+DATABASE.TS
+===============================================
+// ========================================
+// In-memory база данных
+// ========================================
+
+import {
+  Order,
+  Product,
+  ContactMessage,
+  PromoCode,
+  OrderStatus,
+} from '../types';
+
+// ---------- Продукты ----------
+export const products: Product[] = [
+  {
+    id: 1,
+    title: 'Фигурка дракона',
+    category: 'figurines',
+    categoryLabel: 'Фигурки',
+    price: 1200,
+    image: 'fa-dragon',
+    badge: 'Хит',
+    materials: ['pla', 'petg', 'resin'],
+    sizes: ['medium', 'large'],
+    colors: ['Красный', 'Зелёный', 'Синий', 'Чёрный'],
+    rating: 5,
+    reviews: 24,
+    description: 'Детализированная фигурка дракона с расправленными крыльями',
+  },
+  {
+    id: 2,
+    title: 'Ваза геометрическая',
+    category: 'decoration',
+    categoryLabel: 'Декор',
+    price: 850,
+    image: 'fa-vase',
+    badge: 'Новинка',
+    materials: ['pla', 'petg'],
+    sizes: ['medium'],
+    colors: ['Белый', 'Серый', 'Бежевый'],
+    rating: 4.8,
+    reviews: 18,
+    description: 'Стильная ваза с геометрическим узором для современного интерьера',
+  },
+  {
+    id: 3,
+    title: 'Шестерня техническая',
+    category: 'technical',
+    categoryLabel: 'Технические детали',
+    price: 350,
+    image: 'fa-cog',
+    materials: ['abs', 'nylon', 'petg'],
+    sizes: ['small', 'medium'],
+    colors: ['Чёрный', 'Белый', 'Серый'],
+    rating: 4.9,
+    reviews: 42,
+    description: 'Прочная шестерня для механических устройств',
+  },
+  {
+    id: 4,
+    title: 'Подставка для наушников',
+    category: 'accessories',
+    categoryLabel: 'Аксессуары',
+    price: 950,
+    image: 'fa-headphones',
+    materials: ['pla', 'abs', 'petg'],
+    sizes: ['medium'],
+    colors: ['Чёрный', 'Белый', 'Красный', 'Синий'],
+    rating: 4.7,
+    reviews: 31,
+    description: 'Эргономичная подставка для игровых наушников',
+  },
+  {
+    id: 5,
+    title: 'Фигурка совы',
+    category: 'figurines',
+    categoryLabel: 'Фигурки',
+    price: 780,
+    image: 'fa-crow',
+    materials: ['pla', 'resin'],
+    sizes: ['small'],
+    colors: ['Коричневый', 'Серый', 'Белый'],
+    rating: 4.6,
+    reviews: 15,
+    description: 'Милая фигурка совы с большими глазами',
+  },
+  {
+    id: 6,
+    title: 'Кашпо для цветов',
+    category: 'decoration',
+    categoryLabel: 'Декор',
+    price: 650,
+    image: 'fa-leaf',
+    materials: ['pla', 'petg'],
+    sizes: ['small', 'medium'],
+    colors: ['Терракотовый', 'Зелёный', 'Серый'],
+    rating: 4.5,
+    reviews: 22,
+    description: 'Кашпо с дренажным отверстием для комнатных растений',
+  },
+  {
+    id: 7,
+    title: 'Корпус для электроники',
+    category: 'technical',
+    categoryLabel: 'Технические детали',
+    price: 550,
+    image: 'fa-microchip',
+    materials: ['abs', 'petg', 'nylon'],
+    sizes: ['small', 'medium'],
+    colors: ['Чёрный', 'Белый', 'Прозрачный'],
+    rating: 4.8,
+    reviews: 38,
+    description: 'Универсальный корпус для Arduino и Raspberry Pi',
+  },
+  {
+    id: 8,
+    title: 'Брелок с логотипом',
+    category: 'accessories',
+    categoryLabel: 'Аксессуары',
+    price: 200,
+    image: 'fa-key',
+    materials: ['pla', 'abs', 'flex'],
+    sizes: ['small'],
+    colors: ['Любой цвет'],
+    rating: 4.4,
+    reviews: 56,
+    description: 'Персонализированный брелок с вашим логотипом',
+  },
+  {
+    id: 9,
+    title: 'Фигурка рыцаря',
+    category: 'figurines',
+    categoryLabel: 'Фигурки',
+    price: 1450,
+    image: 'fa-chess-knight',
+    badge: 'Хит',
+    materials: ['resin', 'pla'],
+    sizes: ['medium'],
+    colors: ['Серебро', 'Золото', 'Сталь'],
+    rating: 4.9,
+    reviews: 28,
+    description: 'Детализированная фигурка средневекового рыцаря в доспехах',
+  },
+  {
+    id: 10,
+    title: 'Светильник луна',
+    category: 'decoration',
+    categoryLabel: 'Декор',
+    price: 1800,
+    image: 'fa-moon',
+    badge: 'Новинка',
+    materials: ['pla'],
+    sizes: ['large'],
+    colors: ['Белый', 'Жёлтый'],
+    rating: 5,
+    reviews: 12,
+    description: 'Настольный светильник в форме луны с LED подсветкой',
+  },
+  {
+    id: 11,
+    title: 'Кронштейн для монитора',
+    category: 'technical',
+    categoryLabel: 'Технические детали',
+    price: 1200,
+    image: 'fa-tv',
+    materials: ['abs', 'nylon', 'petg'],
+    sizes: ['large'],
+    colors: ['Чёрный', 'Серый'],
+    rating: 4.7,
+    reviews: 19,
+    description: 'Прочный кронштейн для крепления монитора до 27 дюймов',
+  },
+  {
+    id: 12,
+    title: 'Органайзер для кабелей',
+    category: 'accessories',
+    categoryLabel: 'Аксессуары',
+    price: 380,
+    image: 'fa-plug',
+    materials: ['pla', 'flex'],
+    sizes: ['small'],
+    colors: ['Чёрный', 'Белый', 'Серый'],
+    rating: 4.6,
+    reviews: 45,
+    description: 'Набор органайзеров для упорядочивания кабелей',
+  },
+  {
+    id: 13,
+    title: 'Игрушка динозавр',
+    category: 'toys',
+    categoryLabel: 'Игрушки',
+    price: 920,
+    image: 'fa-dragon',
+    materials: ['pla', 'petg'],
+    sizes: ['medium'],
+    colors: ['Зелёный', 'Синий', 'Красный'],
+    rating: 4.8,
+    reviews: 33,
+    description: 'Подвижная игрушка динозавра с шарнирными соединениями',
+  },
+  {
+    id: 14,
+    title: 'Кубик Рубика',
+    category: 'toys',
+    categoryLabel: 'Игрушки',
+    price: 450,
+    image: 'fa-dice',
+    materials: ['pla', 'abs'],
+    sizes: ['small'],
+    colors: ['Классический', 'Чёрный'],
+    rating: 4.5,
+    reviews: 27,
+    description: 'Классический кубик Рубика 3x3, напечатанный на 3D принтере',
+  },
+  {
+    id: 15,
+    title: 'Фигурка космонавта',
+    category: 'figurines',
+    categoryLabel: 'Фигурки',
+    price: 1100,
+    image: 'fa-user-astronaut',
+    materials: ['pla', 'resin'],
+    sizes: ['medium'],
+    colors: ['Белый', 'Серебро'],
+    rating: 4.7,
+    reviews: 21,
+    description: 'Фигурка космонавта в скафандре для коллекции',
+  },
+  {
+    id: 16,
+    title: 'Держатель для телефона',
+    category: 'accessories',
+    categoryLabel: 'Аксессуары',
+    price: 420,
+    image: 'fa-mobile-alt',
+    materials: ['pla', 'petg', 'flex'],
+    sizes: ['small'],
+    colors: ['Чёрный', 'Белый', 'Синий', 'Красный'],
+    rating: 4.6,
+    reviews: 52,
+    description: 'Регулируемая подставка для смартфона на рабочий стол',
+  },
+];
+
+// ---------- Заказы ----------
+export const orders: Order[] = [];
+
+// ---------- Сообщения ----------
+export const contactMessages: ContactMessage[] = [];
+
+// ---------- Промокоды ----------
+export const promoCodes: PromoCode[] = [
+  {
+    code: 'WELCOME10',
+    discount: 0.1,
+    freeShipping: false,
+    description: 'Скидка 10% на первый заказ',
+    active: true,
+  },
+  {
+    code: 'SUMMER20',
+    discount: 0.2,
+    freeShipping: false,
+    description: 'Летняя скидка 20%',
+    active: true,
+  },
+  {
+    code: 'FREESHIP',
+    discount: 0,
+    freeShipping: true,
+    description: 'Бесплатная доставка',
+    active: true,
+  },
+];
+
+// ---------- Счётчик ID заказов ----------
+let orderCounter = 0;
+
+// ---------- Утилиты ----------
+export function generateOrderNumber(): string {
+  orderCounter++;
+  const now = new Date();
+  const date = now.toISOString().slice(0, 10).replace(/-/g, '');
+  return `#${date}-${String(orderCounter).padStart(3, '0')}`;
+}
+
+export function saveOrder(order: Order): Order {
+  orders.push(order);
+  return order;
+}
+
+export function getOrderById(id: string): Order | undefined {
+  return orders.find((o) => o.id === id);
+}
+
+export function getOrdersByEmail(email: string): Order[] {
+  return orders.filter((o) => o.customer.email.toLowerCase() === email.toLowerCase());
+}
+
+export function getAllOrders(): Order[] {
+  return orders;
+}
+
+export function updateOrderStatus(id: string, status: OrderStatus): Order | undefined {
+  const order = getOrderById(id);
+  if (order) {
+    order.status = status;
+  }
+  return order;
+}
+
+export function saveContactMessage(msg: ContactMessage): ContactMessage {
+  contactMessages.push(msg);
+  return msg;
+}
+
+export function getPromoCode(code: string): PromoCode | undefined {
+  return promoCodes.find(
+    (p) => p.code.toLowerCase() === code.toLowerCase() && p.active
+  );
+}
+
+===============================================
+CONSTANTS.TS
+===============================================
+export const CONSTANTS = {
+  get SPREADSHEET_ID(): string {
+    return process.env.GOOGLE_SHEET_ID || '';
+  },
+  TAX_RATE: 0.06,
+  CASH_ON_DELIVERY_FEE: 0.05,
+
+  PRINTERS: {
+    'Flashforge Adventurer 5m': 10,
+    'Flashforge Adventurer 5m Pro': 14,
+    'Qidi Q2': 25
+  },
+
+  MATERIALS: {
+    'PETG Гексалит': 1.5,
+    'ASA Elegoo': 3,
+    'ABS': 2,
+    'PA12': 10,
+    'PA6': 8,
+    'PA-CF': 8
+  },
+
+  READY_PRODUCTS: {
+    'Фигурка дракона': 400,
+    'Фигурка совы': 350,
+    'Фигурка рыцаря': 500,
+    'Фигурка космонавта': 450,
+    'Ваза геометрическая': 300,
+    'Светильник луна': 600
+  },
+
+  SHEET_COLUMNS: [
+    'Дата', 'Изделие', 'Кол-во', 'Материал', 'Место продажи', 'Доставка',
+    'Сумма продажи', 'Сумма доставки', 'Форма платежа', 'Принтер',
+    'Затраты на пр-во', 'Прибыль', 'Год', 'Месяц', 'Ком. места прод.',
+    'Ком. платежа', 'Налог', 'Способ контакта',
+    'Дата отправки по договоренности', 'Статус', 'Комментарий'
+  ]
+};
+
+===============================================
+DRIVE.SERVICE.TS
+===============================================
+import { google } from 'googleapis';
+import fs from 'fs';
+import path from 'path';
+
+// Авторизация (используем те же данные, что для таблиц)
+const auth = new google.auth.JWT(
+  process.env.GOOGLE_SERVICE_EMAIL,
+  undefined,
+  process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  ['https://www.googleapis.com/auth/drive.file']
+);
+
+const drive = google.drive({ version: 'v3', auth });
+
+export async function uploadToDrive(localFilePath: string, fileName: string) {
+  try {
+    const fileMetadata = {
+      name: fileName,
+      parents: [process.env.GOOGLE_DRIVE_FOLDER_ID as string], // ID папки из .env
+    };
+
+    const media = {
+      mimeType: 'application/octet-stream', // Для STL файлов
+      body: fs.createReadStream(localFilePath),
+    };
+
+    const response = await drive.files.create({
+      requestBody: fileMetadata,
+      media: media,
+      fields: 'id, webViewLink',
+    });
+
+    // Делаем файл доступным для просмотра по ссылке (опционально)
+    await drive.permissions.create({
+      fileId: response.data.id as string,
+      requestBody: {
+        role: 'reader',
+        type: 'anyone',
+      },
+    });
+
+    return response.data.webViewLink; // Возвращает прямую ссылку на файл
+  } catch (error) {
+    console.error('Ошибка загрузки на Google Диск:', error);
+    throw error;
+  }
+}
+
+===============================================
+SHEETS.SERVICE.TS
+===============================================
+import { GoogleSpreadsheet } from 'google-spreadsheet';
+import { JWT } from 'google-auth-library';
+import { CONSTANTS } from '../config/constants';
+
+let doc: GoogleSpreadsheet | null = null;
+
+async function getDoc(): Promise<GoogleSpreadsheet> {
+  if (doc) return doc;
+
+  const auth = new JWT({
+    email: process.env.GOOGLE_SERVICE_EMAIL,
+    key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
+
+  doc = new GoogleSpreadsheet(CONSTANTS.SPREADSHEET_ID, auth);
+  await doc.loadInfo();
+  return doc;
+}
+
+export interface OrderData {
+  title: string;
+  quantity: number;
+  material: string;
+  deliveryType: string;
+  totalPrice: number;
+  shippingCost: number;
+  paymentMethod: string;
+  printerName: string;
+  productionCost: number;
+  pribyl: number;
+  nalog: number;
+  komPlat: number;
+  komMesta: number;
+  contactMethod?: string;
+  driveLink?: string;
+  comment?: string;
+  tempFilePath?: string;
+  plannedShipDate?: string;
+}
+
+function formatDate(date: Date): string {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
+}
+
+export async function addOrderToTable(order: OrderData): Promise<void> {
+  const spreadsheet = await getDoc();
+  const sheet = spreadsheet.sheetsByIndex[0];
+
+  const date = new Date();
+
+  await sheet.addRow({
+    'Дата': formatDate(date),
+    'Изделие': order.title,
+    'Кол-во': order.quantity,
+    'Материал': order.material,
+    'Место продажи': 'Сайт',
+    'Доставка': order.deliveryType,
+    'Сумма продажи': order.totalPrice,
+    'Сумма доставки': order.shippingCost,
+    'Форма платежа': order.paymentMethod,
+    'Принтер': order.printerName,
+    'Затраты на пр-во': order.productionCost,
+    'Прибыль': order.pribyl,
+    'Год': date.getFullYear(),
+    'Месяц': date.getMonth() + 1,
+    'Ком. места прод.': order.komMesta || 0,
+    'Ком. платежа': order.komPlat,
+    'Налог': order.nalog,
+    'Способ контакта': order.contactMethod || 'Сайт',
+    'Дата отправки по договоренности': order.plannedShipDate || '',
+    'Статус': 'Новый',
+    'Комментарий': order.driveLink || order.comment || '',
+  });
+}
+
+===============================================
+UPLOAD.TS
+===============================================
+// ========================================
+// Маршруты — Загрузка файлов
+// ========================================
+
+import { Router, Request, Response, NextFunction } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
+import { ApiResponse, FileUpload } from '../types';
+import { AppError } from '../middleware/error';
+
+let NodeStl: any = null;
+try {
+  NodeStl = require('node-stl');
+} catch (e) {
+  console.log('node-stl not available');
+}
+
+const router = Router();
+
+function analyzeStl(filePath: string): { lengthMeters: number; volumeCm3: number } | null {
+  if (!NodeStl) return null;
+
+  try {
+    const stl = new NodeStl(filePath);
+    const volumeCm3 = stl.volume / 1000;
+    const diameterMm = 1.75;
+    const crossSectionMm2 = Math.PI * Math.pow(diameterMm / 2, 2);
+    const lengthMm = (stl.volume * 1000) / crossSectionMm2;
+    const lengthMeters = lengthMm / 1000;
+
+    return {
+      lengthMeters: Math.round(lengthMeters * 100) / 100,
+      volumeCm3: Math.round(volumeCm3 * 100) / 100,
+    };
+  } catch (e) {
+    console.error('STL analysis error:', e);
+    return null;
+  }
+}
+
+// Настройка multer для загрузки файлов
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const uploadDir = process.env.UPLOAD_DIR || './uploads';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (_req, file, cb) => {
+    const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
+  },
+});
+
+const fileFilter = (
+  _req: Request,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+): void => {
+  const allowedTypes = [
+    '.stl',
+    '.obj',
+    '.3mf',
+    '.step',
+    '.stp',
+    '.ply',
+    '.amf',
+  ];
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  if (allowedTypes.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new AppError('Неподдерживаемый формат файла. Допустимы: STL, OBJ, 3MF, STEP, PLY, AMF', 400));
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50 MB
+  },
+});
+
+/**
+ * POST /api/upload
+ * Загрузка 3D файла
+ */
+router.post(
+  '/',
+  upload.array('files', 5),
+  (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const files = req.files as Express.Multer.File[];
+
+      if (!files || files.length === 0) {
+        throw new AppError('Файлы не загружены', 400);
+      }
+
+      const uploadedFiles: (FileUpload & { stlAnalysis?: { lengthMeters: number; volumeCm3: number }; tempFilePath?: string })[] = files.map((file) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        const stlAnalysis = ext === '.stl' ? analyzeStl(file.path) : null;
+
+        return {
+          originalname: file.originalname,
+          filename: file.filename,
+          path: file.path,
+          size: file.size,
+          mimetype: file.mimetype,
+          stlAnalysis: stlAnalysis || undefined,
+          tempFilePath: file.path,
+        };
+      });
+
+      const response: ApiResponse<typeof uploadedFiles> = {
+        success: true,
+        data: uploadedFiles,
+        message: `Загружено файлов: ${files.length}`,
+      };
+
+      res.status(201).json(response);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+export default router;
+
+===============================================
+ORDERS.TS
+===============================================
+// ========================================
+// Маршруты — Заказы
+// ========================================
+
+import { Router, Request, Response, NextFunction } from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
+import path from 'path';
+import {
+  saveOrder,
+  getOrderById,
+  getOrdersByEmail,
+  getAllOrders,
+  updateOrderStatus,
+  generateOrderNumber,
+} from '../db/database';
+import {
+  ApiResponse,
+  Order,
+  OrderStatus,
+} from '../types';
+import { AppError } from '../middleware/error';
+import { CONSTANTS } from '../config/constants';
+import { addOrderToTable } from '../services/sheets.service';
+import { uploadToDrive } from '../services/drive.service';
+
+let NodeStl: any = null;
+try {
+  NodeStl = require('node-stl');
+} catch (e) {
+  console.log('node-stl not available');
+}
+
+const router = Router();
+
+interface CreateOrderRequest {
+  title: string;
+  quantity: number;
+  material: string;
+  printerName: string;
+  paymentMethod: string;
+  deliveryType: string;
+  totalPrice: number;
+  shippingCost: number;
+  productType?: 'custom' | 'ready';
+  tempFilePath?: string;
+  contactMethod?: string;
+  comment?: string;
+  plannedShipDate?: string;
+}
+
+function isReadyProduct(title: string): boolean {
+  return title in CONSTANTS.READY_PRODUCTS;
+}
+
+function getReadyProductCost(title: string): number {
+  return CONSTANTS.READY_PRODUCTS[title as keyof typeof CONSTANTS.READY_PRODUCTS] || 0;
+}
+
+function analyzeStl(filePath: string): { lengthMeters: number; volumeCm3: number } | null {
+  if (!NodeStl) {
+    console.warn('node-stl not loaded');
+    return null;
+  }
+
+  try {
+    const stl = new NodeStl(filePath);
+    const volumeCm3 = stl.volume / 1000;
+    const diameterMm = 1.75;
+    const crossSectionMm2 = Math.PI * Math.pow(diameterMm / 2, 2);
+    const lengthMm = (stl.volume * 1000) / crossSectionMm2;
+    const lengthMeters = lengthMm / 1000;
+
+    return {
+      lengthMeters: Math.round(lengthMeters * 100) / 100,
+      volumeCm3: Math.round(volumeCm3 * 100) / 100,
+    };
+  } catch (e) {
+    console.error('STL analysis error:', e);
+    return null;
+  }
+}
+
+function getMaterialPrice(material: string): number {
+  return CONSTANTS.MATERIALS[material as keyof typeof CONSTANTS.MATERIALS] || 1.5;
+}
+
+function getPrinterPrice(printerName: string): number {
+  return CONSTANTS.PRINTERS[printerName as keyof typeof CONSTANTS.PRINTERS] || 10;
+}
+
+/**
+ * POST /api/orders
+ * Создание нового заказа с расчётом и записью в Google Таблицу
+ */
+router.post('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const {
+      title,
+      quantity,
+      material,
+      printerName,
+      paymentMethod,
+      deliveryType,
+      totalPrice,
+      shippingCost,
+      productType,
+      tempFilePath,
+      contactMethod,
+      comment,
+      plannedShipDate,
+    } = req.body as CreateOrderRequest;
+
+    if (!title || !quantity || !material || !printerName || !paymentMethod || !deliveryType || !totalPrice) {
+      throw new AppError('Недостаточно данных для создания заказа', 400);
+    }
+
+    const isReady = productType === 'ready' || isReadyProduct(title);
+    let stlAnalysis = null;
+    let driveLink = '';
+    let productionCost = 0;
+
+    if (isReady) {
+      productionCost = getReadyProductCost(title);
+      driveLink = '-';
+      console.log(`Готовая фигурка: productionCost = ${productionCost}`);
+    } else if (tempFilePath && fs.existsSync(tempFilePath)) {
+      stlAnalysis = analyzeStl(tempFilePath);
+
+      if (stlAnalysis) {
+        const ext = path.extname(tempFilePath);
+        const fileName = `${title}_${Date.now()}${ext}`;
+        const mimeType = ext === '.stl' ? 'application/sla' : 'application/octet-stream';
+
+        try {
+          driveLink = await uploadToDrive(tempFilePath, fileName, mimeType);
+          console.log('Uploaded to Drive:', driveLink);
+        } catch (driveErr) {
+          console.error('Drive upload failed:', driveErr);
+        }
+      }
+
+      const lengthMeters = stlAnalysis?.lengthMeters || 0;
+      const materialPrice = getMaterialPrice(material);
+      const printerPrice = getPrinterPrice(printerName);
+      const machineHours = lengthMeters / 10;
+
+      const materialCost = lengthMeters * materialPrice;
+      const machineCost = machineHours * printerPrice;
+      productionCost = Math.round((materialCost + machineCost) * 100) / 100;
+    } else {
+      productionCost = 0;
+    }
+
+    const nalog = Math.round(totalPrice * CONSTANTS.TAX_RATE * 100) / 100;
+    const komPlat = paymentMethod === 'Наложенный платеж'
+      ? Math.round(totalPrice * CONSTANTS.CASH_ON_DELIVERY_FEE * 100) / 100
+      : 0;
+
+    const pribyl = Math.round((totalPrice - productionCost - nalog - komPlat) * 100) / 100;
+
+    console.log('Order calculations:', {
+      lengthMeters,
+      materialCost,
+      machineCost,
+      productionCost,
+      nalog,
+      komPlat,
+      pribyl
+    });
+
+    const orderNumber = generateOrderNumber();
+    const order: Order = {
+      id: uuidv4(),
+      number: orderNumber,
+      date: new Date().toISOString(),
+      status: 'pending',
+      items: [{
+        id: 1,
+        title,
+        price: totalPrice / quantity,
+        image: '',
+        category: '',
+        options: { material, color: '', size: '' },
+        quantity
+      }],
+      customer: {
+        firstName: '',
+        lastName: '',
+        email: req.body.email || '',
+        phone: req.body.phone || ''
+      },
+      delivery: { type: deliveryType as 'pickup' | 'courier' | 'post' },
+      payment: paymentMethod as 'card' | 'cash' | 'invoice',
+      options: { giftWrap: false, qualityCheck: false, express: false },
+      subtotal: totalPrice - shippingCost,
+      shipping: shippingCost,
+      optionsTotal: 0,
+      total: totalPrice,
+    };
+
+    saveOrder(order);
+
+    try {
+      await addOrderToTable({
+        title,
+        quantity,
+        material,
+        deliveryType,
+        totalPrice,
+        shippingCost,
+        paymentMethod,
+        printerName,
+        productionCost,
+        pribyl,
+        nalog,
+        komPlat,
+        komMesta: 0,
+        contactMethod,
+        driveLink,
+        comment,
+        plannedShipDate
+      });
+      console.log('Order added to Google Sheets');
+    } catch (sheetsErr) {
+      console.error('Sheets error:', sheetsErr);
+    }
+
+    if (tempFilePath && fs.existsSync(tempFilePath)) {
+      try {
+        fs.unlinkSync(tempFilePath);
+        console.log('Local file deleted:', tempFilePath);
+      } catch (delErr) {
+        console.error('File delete error:', delErr);
+      }
+    }
+
+    const response: ApiResponse<Order> = {
+      success: true,
+      data: order,
+      message: `Заказ ${orderNumber} создан. Прибыль: ${pribyl} ₽`,
+    };
+
+    res.status(201).json(response);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/orders/:id
+ * Получение заказа по ID
+ */
+router.get('/:id', (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const order = getOrderById(req.params.id);
+
+    if (!order) {
+      throw new AppError('Заказ не найден', 404);
+    }
+
+    const response: ApiResponse<Order> = {
+      success: true,
+      data: order,
+    };
+
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/orders/email/:email
+ * Получение всех заказов по email
+ */
+router.get('/email/:email', (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const orders = getOrdersByEmail(req.params.email);
+
+    const response: ApiResponse<Order[]> = {
+      success: true,
+      data: orders,
+    };
+
+    res.json(response);
+  } catch (err) {
+    next(new AppError('Ошибка при получении заказов', 500));
+  }
+});
+
+/**
+ * GET /api/orders/all
+ * Получение всех заказов (для админа)
+ */
+router.get('/all', (_req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const orders = getAllOrders();
+
+    const response: ApiResponse<Order[]> = {
+      success: true,
+      data: orders,
+    };
+
+    res.json(response);
+  } catch (err) {
+    next(new AppError('Ошибка при получении заказов', 500));
+  }
+});
+
+/**
+ * PATCH /api/orders/:id/status
+ * Обновление статуса заказа
+ */
+router.patch('/:id/status', (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const { status } = req.body as { status?: OrderStatus };
+
+    if (!status) {
+      throw new AppError('Укажите статус', 400);
+    }
+
+    const validStatuses: OrderStatus[] = [
+      'pending',
+      'processing',
+      'printing',
+      'quality-check',
+      'ready',
+      'shipped',
+      'delivered',
+      'cancelled',
+    ];
+
+    if (!validStatuses.includes(status)) {
+      throw new AppError('Неверный статус', 400);
+    }
+
+    const order = updateOrderStatus(req.params.id, status);
+
+    if (!order) {
+      throw new AppError('Заказ не найден', 404);
+    }
+
+    const response: ApiResponse<Order> = {
+      success: true,
+      data: order,
+      message: 'Статус заказа обновлён',
+    };
+
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default router;
+
+===============================================
+CONTACT.TS
+===============================================
+// ========================================
+// Маршруты — Контактные сообщения
+// ========================================
+
+import { Router, Request, Response, NextFunction } from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import { saveContactMessage } from '../db/database';
+import { ApiResponse, ContactMessage } from '../types';
+import { AppError } from '../middleware/error';
+
+const router = Router();
+
+/**
+ * POST /api/contact
+ * Отправка контактного сообщения
+ */
+router.post('/', (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const { name, email, phone, subject, message } = req.body;
+
+    // Валидация
+    if (!name || !email || !subject || !message) {
+      throw new AppError('Заполните все обязательные поля', 400);
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new AppError('Неверный формат email', 400);
+    }
+
+    const contactMsg: ContactMessage = {
+      id: uuidv4(),
+      name,
+      email,
+      phone,
+      subject,
+      message,
+      date: new Date().toISOString(),
+      status: 'new',
+    };
+
+    saveContactMessage(contactMsg);
+
+    const response: ApiResponse<ContactMessage> = {
+      success: true,
+      data: contactMsg,
+      message: 'Сообщение успешно отправлено',
+    };
+
+    res.status(201).json(response);
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default router;
+
+===============================================
+PROMO.TS
+===============================================
+// ========================================
+// Маршруты — Промокоды
+// ========================================
+
+import { Router, Request, Response, NextFunction } from 'express';
+import { getPromoCode } from '../db/database';
+import { ApiResponse, PromoCode } from '../types';
+import { AppError } from '../middleware/error';
+
+const router = Router();
+
+/**
+ * GET /api/promo/:code
+ * Проверка и получение информации о промокоде
+ */
+router.get('/:code', (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const code = req.params.code.trim().toUpperCase();
+
+    if (!code) {
+      throw new AppError('Укажите промокод', 400);
+    }
+
+    const promo = getPromoCode(code);
+
+    if (!promo) {
+      const response: ApiResponse = {
+        success: false,
+        error: 'Неверный промокод',
+      };
+      res.status(404).json(response);
+      return;
+    }
+
+    // Проверка срока действия
+    if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) {
+      const response: ApiResponse = {
+        success: false,
+        error: 'Промокод истёк',
+      };
+      res.status(410).json(response);
+      return;
+    }
+
+    const response: ApiResponse<PromoCode> = {
+      success: true,
+      data: promo,
+    };
+
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default router;
+
+===============================================
+PRODUCTS.TS
+===============================================
+// ========================================
+// Маршруты — Продукты
+// ========================================
+
+import { Router, Request, Response, NextFunction } from 'express';
+import { products } from '../db/database';
+import { ApiResponse, Product } from '../types';
+import { AppError } from '../middleware/error';
+
+const router = Router();
+
+/**
+ * GET /api/products
+ * Получение всех продуктов с фильтрацией и пагинацией
+ */
+router.get('/', (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    let filtered = [...products];
+
+    // Фильтр по категории
+    const category = req.query.category as string | undefined;
+    if (category && category !== 'all') {
+      filtered = filtered.filter((p) => p.category === category);
+    }
+
+    // Фильтр по материалу
+    const material = req.query.material as string | undefined;
+    if (material) {
+      filtered = filtered.filter((p) => p.materials.includes(material));
+    }
+
+    // Фильтр по цене
+    const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice as string) : null;
+    const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : null;
+    if (minPrice !== null) filtered = filtered.filter((p) => p.price >= minPrice);
+    if (maxPrice !== null) filtered = filtered.filter((p) => p.price <= maxPrice);
+
+    // Поиск по названию
+    const search = req.query.search as string | undefined;
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.title.toLowerCase().includes(searchLower) ||
+          p.description.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Сортировка
+    const sort = (req.query.sort as string) || 'popular';
+    switch (sort) {
+      case 'price-asc':
+        filtered.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-desc':
+        filtered.sort((a, b) => b.price - a.price);
+        break;
+      case 'name':
+        filtered.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case 'newest':
+        filtered.sort((a, b) => b.id - a.id);
+        break;
+      default:
+        filtered.sort((a, b) => b.rating - a.rating);
+    }
+
+    // Пагинация
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 12;
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / limit);
+    const start = (page - 1) * limit;
+    const paginated = filtered.slice(start, start + limit);
+
+    const response: ApiResponse<Product[]> = {
+      success: true,
+      data: paginated,
+      pagination: { page, limit, total, totalPages },
+    };
+
+    res.json(response);
+  } catch (err) {
+    next(new AppError('Ошибка при получении продуктов', 500));
+  }
+});
+
+/**
+ * GET /api/products/:id
+ * Получение одного продукта по ID
+ */
+router.get('/:id', (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const id = parseInt(req.params.id);
+    const product = products.find((p) => p.id === id);
+
+    if (!product) {
+      throw new AppError('Продукт не найден', 404);
+    }
+
+    const response: ApiResponse<Product> = {
+      success: true,
+      data: product,
+    };
+
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/products/categories
+ * Получение списка категорий
+ */
+router.get('/categories', (_req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const categoriesMap = new Map<string, string>();
+    products.forEach((p) => {
+      if (!categoriesMap.has(p.category)) {
+        categoriesMap.set(p.category, p.categoryLabel);
+      }
+    });
+
+    const categories = Array.from(categoriesMap.entries()).map(([id, label]) => ({
+      id,
+      label,
+      count: products.filter((p) => p.category === id).length,
+    }));
+
+    const response: ApiResponse = {
+      success: true,
+      data: categories,
+    };
+
+    res.json(response);
+  } catch (err) {
+    next(new AppError('Ошибка при получении категорий', 500));
+  }
+});
+
+export default router;
+
+===============================================
+CORS.TS
+===============================================
+// ========================================
+// Middleware — CORS конфигурация
+// ========================================
+
+import { Request, Response, NextFunction } from 'express';
+
+export function corsMiddleware(req: Request, res: Response, next: NextFunction): void {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400');
+
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(204);
+    return;
+  }
+
+  next();
+}
+
+===============================================
+ERROR.TS
+===============================================
+// ========================================
+// Middleware — обработка ошибок
+// ========================================
+
+import { Request, Response, NextFunction } from 'express';
+import { ApiResponse } from '../types';
+
+export class AppError extends Error {
+  public statusCode: number;
+  public isOperational: boolean;
+
+  constructor(message: string, statusCode: number) {
+    super(message);
+    this.statusCode = statusCode;
+    this.isOperational = true;
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
+export function errorMiddleware(
+  err: Error | AppError,
+  _req: Request,
+  res: Response,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _next: NextFunction
+): void {
+  const statusCode = (err as AppError).statusCode || 500;
+  const message = err.message || 'Внутренняя ошибка сервера';
+
+  const response: ApiResponse = {
+    success: false,
+    error: message,
+  };
+
+  res.status(statusCode).json(response);
+}
+
+export function notFoundMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  next(new AppError(`Маршрут не найден: ${req.originalUrl}`, 404));
+}
+
+===============================================
+TYPES/INDEX.TS
+===============================================
+// ========================================
+// Типы данных для EngiNeo API
+// ========================================
+
+export interface Product {
+  id: number;
+  title: string;
+  category: string;
+  categoryLabel: string;
+  price: number;
+  image: string;
+  badge?: string;
+  materials: string[];
+  sizes: string[];
+  colors: string[];
+  rating: number;
+  reviews: number;
+  description: string;
+}
+
+export interface CartItem {
+  id: number;
+  title: string;
+  price: number;
+  image: string;
+  category: string;
+  options: {
+    material: string;
+    color: string;
+    size: string;
+  };
+  quantity: number;
+}
+
+export interface CustomerInfo {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+}
+
+export interface DeliveryInfo {
+  type: 'pickup' | 'courier' | 'post';
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  comment?: string;
+}
+
+export interface OrderOptions {
+  giftWrap: boolean;
+  qualityCheck: boolean;
+  express: boolean;
+}
+
+export interface Order {
+  id: string;
+  number: string;
+  date: string;
+  status: OrderStatus;
+  items: CartItem[];
+  customer: CustomerInfo;
+  delivery: DeliveryInfo;
+  payment: 'card' | 'cash' | 'invoice';
+  options: OrderOptions;
+  subtotal: number;
+  shipping: number;
+  optionsTotal: number;
+  total: number;
+}
+
+export type OrderStatus =
+  | 'pending'
+  | 'processing'
+  | 'printing'
+  | 'quality-check'
+  | 'ready'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled';
+
+export interface QuickOrderRequest {
+  name: string;
+  email: string;
+  phone: string;
+  message?: string;
+  files?: string[];
+}
+
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+  date: string;
+  status: 'new' | 'read' | 'replied';
+}
+
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+  pagination?: PaginationInfo;
+}
+
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PromoCode {
+  code: string;
+  discount: number;
+  freeShipping: boolean;
+  description: string;
+  active: boolean;
+  expiresAt?: string;
+}
+
+export interface FileUpload {
+  originalname: string;
+  filename: string;
+  path: string;
+  size: number;
+  mimetype: string;
+}
+
+===============================================
+INDEX.HTML
+===============================================
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EngiNeo — Студия 3D печати</title>
+    <link rel="icon" type="image/png" href="image/logo.png">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Шапка сайта -->
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">
+                <img src="image/logo.png" alt="EngiNeo">
+                <span>EngiNeo</span>
+            </div>
+            <nav class="nav">
+                <a href="index.html" class="nav-link active">Главная</a>
+                <a href="catalog.html" class="nav-link">Каталог</a>
+                <a href="services.html" class="nav-link">Услуги</a>
+                <a href="about.html" class="nav-link">О нас</a>
+                <a href="contact.html" class="nav-link">Контакты</a>
+                <a href="my-orders.html" class="nav-link">Мои заказы</a>
+                <a href="admin.html" class="nav-link">Админ</a>
+            </nav>
+            <div class="header-actions">
+                <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <a href="cart.html" class="cart-btn">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cartCount">0</span>
+                </a>
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Мобильное меню -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="index.html" class="mobile-nav-link active">Главная</a>
+        <a href="catalog.html" class="mobile-nav-link">Каталог</a>
+        <a href="services.html" class="mobile-nav-link">Услуги</a>
+        <a href="about.html" class="mobile-nav-link">О нас</a>
+        <a href="contact.html" class="mobile-nav-link">Контакты</a>
+    </div>
+
+    <!-- Герой-секция -->
+    <section class="hero">
+        <div class="container hero-content">
+            <div class="hero-text">
+                <h1>Профессиональная 3D печать</h1>
+                <p>Создадим ваши идеи в реальность с помощью современных технологий 3D печати. Быстро, качественно, доступно.</p>
+                <div class="hero-buttons">
+                    <a href="catalog.html" class="btn btn-primary">Заказать печать</a>
+                    <a href="services.html" class="btn btn-secondary">Наши услуги</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="cube-animation">
+                    <div class="cube-face front"></div>
+                    <div class="cube-face back"></div>
+                    <div class="cube-face right"></div>
+                    <div class="cube-face left"></div>
+                    <div class="cube-face top"></div>
+                    <div class="cube-face bottom"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Преимущества -->
+    <section class="features">
+        <div class="container">
+            <h2 class="section-title">Почему выбирают нас</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3>Быстрое выполнение</h3>
+                    <p>От 24 часов на выполнение заказа. Срочная печать в день обращения.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-medal"></i>
+                    </div>
+                    <h3>Высокое качество</h3>
+                    <p>Точность печати до 0.1 мм. Используем только сертифицированные материалы.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <h3>Большой выбор материалов</h3>
+                    <p>PLA, PETG, ABS, Flex, Nylon и другие. Более 20 цветов на выбор.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h3>Техническая поддержка</h3>
+                    <p>Поможем с моделированием, проконсультируем по материалам и технологиям.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Популярные товары -->
+    <section class="popular-products">
+        <div class="container">
+            <h2 class="section-title">Популярные модели</h2>
+            <div class="products-grid" id="popularProducts">
+                <!-- Товары загружаются через JS -->
+            </div>
+            <div class="section-footer">
+                <a href="catalog.html" class="btn btn-outline">Смотреть весь каталог</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Как мы работаем -->
+    <section class="how-it-works">
+        <div class="container">
+            <h2 class="section-title">Как мы работаем</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Выберите модель</h3>
+                        <p>Выберите готовую модель из каталога или загрузите свой 3D файл</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Настройте параметры</h3>
+                        <p>Выберите материал, цвет, масштаб и другие параметры печати</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Оформите заказ</h3>
+                        <p>Заполните форму заказа и выберите способ доставки</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Получите готовое изделие</h3>
+                        <p>Заберите заказ в пункте выдачи или получите курьером</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Форма быстрого заказа -->
+    <section class="quick-order">
+        <div class="container">
+            <div class="quick-order-content">
+                <div class="quick-order-text">
+                    <h2>Нужна индивидуальная печать?</h2>
+                    <p>Загрузите свою 3D модель и получите расчёт стоимости в течение 30 минут</p>
+                    <ul class="quick-order-list">
+                        <li><i class="fas fa-check"></i> Бесплатный расчёт стоимости</li>
+                        <li><i class="fas fa-check"></i> Консультация специалиста</li>
+                        <li><i class="fas fa-check"></i> Возможность внесения правок</li>
+                    </ul>
+                </div>
+                <form class="quick-order-form" id="quickOrderForm">
+                    <div class="form-group">
+                        <label>Тип заказа:</label>
+                        <div class="product-type-options">
+                            <label class="product-type-option">
+                                <input type="radio" name="productType" value="custom" checked>
+                                <span><i class="fas fa-cube"></i> Печать на заказ</span>
+                            </label>
+                            <label class="product-type-option">
+                                <input type="radio" name="productType" value="ready">
+                                <span><i class="fas fa-check-circle"></i> Готовая фигурка</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" name="name" placeholder="Ваше имя" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" name="email" placeholder="Email" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="tel" name="phone" placeholder="Телефон" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="number" name="totalPrice" placeholder="Желаемая цена (руб)" value="1200">
+                    </div>
+                    <div class="form-group file-upload">
+                        <label for="fileUpload">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Загрузить 3D файл (.stl, .obj)</span>
+                        </label>
+                        <input type="file" id="fileUpload" accept=".stl,.obj">
+                    </div>
+                    <input type="hidden" id="tempFilePath" name="tempFilePath" value="">
+                    <div id="previewContainer" class="preview-container" style="display: none;">
+                        <model-viewer id="stlViewer" src="" auto-rotate camera-controls style="width: 100%; height: 300px; background: var(--bg-secondary); border-radius: 8px;"></model-viewer>
+                        <div id="previewInfo" class="preview-info"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">Оформить заказ</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Футер -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <div class="footer-logo">
+                        <img src="image/logo.png" alt="EngiNeo">
+                        <span>EngiNeo</span>
+                    </div>
+                    <p>Профессиональная студия 3D печати. Создаём ваши идеи в реальность.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-vk"></i></a>
+                        <a href="#"><i class="fab fa-telegram"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h4>Каталог</h4>
+                    <ul>
+                        <li><a href="catalog.html?category=figurines">Фигурки</a></li>
+                        <li><a href="catalog.html?category=decoration">Декор</a></li>
+                        <li><a href="catalog.html?category=technical">Технические детали</a></li>
+                        <li><a href="catalog.html?category=accessories">Аксессуары</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Услуги</h4>
+                    <ul>
+                        <li><a href="services.html#modeling">3D моделирование</a></li>
+                        <li><a href="services.html#scanning">3D сканирование</a></li>
+                        <li><a href="services.html#postprocessing">Постобработка</a></li>
+                        <li><a href="services.html#design">Дизайн</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Контакты</h4>
+                    <ul class="contact-list">
+                        <li><i class="fas fa-phone"></i> +7 (999) 123-45-67</li>
+                        <li><i class="fas fa-envelope"></i> info@engineo.ru</li>
+                        <li><i class="fas fa-map-marker-alt"></i> Москва, ул. Примерная, 10</li>
+                        <li><i class="fas fa-clock"></i> Пн-Пт: 10:00 - 20:00</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 EngiNeo. Все права защищены.</p>
+                <div class="footer-links">
+                    <a href="#">Политика конфиденциальности</a>
+                    <a href="#">Договор оферты</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        function updatePreview(fileUrl, analysis) {
+            const viewer = document.getElementById('stlViewer');
+            const preview = document.getElementById('previewContainer');
+            const info = document.getElementById('previewInfo');
+            
+            preview.style.display = 'block';
+            viewer.src = fileUrl;
+            
+            if (analysis) {
+                info.innerHTML = `Объем: ${analysis.volumeCm3} см³ | Длина нити: ${analysis.lengthMeters} м`;
+            }
+        }
+    </script>
+</body>
+</html>
+
+===============================================
+ADMIN.HTML
+===============================================
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EngiNeo — Админ-панель</title>
+    <link rel="icon" type="image/png" href="image/logo.png">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">
+                <img src="image/logo.png" alt="EngiNeo">
+                <span>EngiNeo</span>
+            </div>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Главная</a>
+                <a href="catalog.html" class="nav-link">Каталог</a>
+                <a href="admin.html" class="nav-link active">Админ</a>
+            </nav>
+            <div class="header-actions">
+                <a href="my-orders.html" class="cart-btn">
+                    <i class="fas fa-box"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <section class="page-header">
+        <div class="container">
+            <h1>Админ-панель</h1>
+            <div class="breadcrumb">
+                <a href="index.html">Главная</a>
+                <span>/</span>
+                <span>Админ</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="admin-section">
+        <div class="container">
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-tab="orders">Заказы</button>
+                <button class="admin-tab" data-tab="products">Товары</button>
+                <button class="admin-tab" data-tab="stats">Статистика</button>
+            </div>
+
+            <div class="admin-content" id="tab-orders">
+                <div class="admin-filters">
+                    <select id="statusFilter">
+                        <option value="">Все статусы</option>
+                        <option value="pending">Новый</option>
+                        <option value="processing">В обработке</option>
+                        <option value="printing">Печать</option>
+                        <option value="quality-check">Проверка</option>
+                        <option value="ready">Готов</option>
+                        <option value="shipped">Отправлен</option>
+                        <option value="delivered">Доставлен</option>
+                        <option value="cancelled">Отменён</option>
+                    </select>
+                    <input type="text" id="searchOrder" placeholder="Поиск по номеру заказа...">
+                </div>
+                <div class="orders-table-container">
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th>№</th>
+                                <th>Дата</th>
+                                <th>Товар</th>
+                                <th>Кол-во</th>
+                                <th>Сумма</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <tr>
+                                <td colspan="7" class="loading">Загрузка...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="admin-content" id="tab-products" style="display: none;">
+                <div class="admin-filters">
+                    <select id="categoryFilter">
+                        <option value="">Все категории</option>
+                        <option value="figurines">Фигурки</option>
+                        <option value="decoration">Декор</option>
+                        <option value="technical">Технические</option>
+                        <option value="accessories">Аксессуары</option>
+                        <option value="toys">Игрушки</option>
+                    </select>
+                    <button class="btn btn-primary" id="addProductBtn">
+                        <i class="fas fa-plus"></i> Добавить товар
+                    </button>
+                </div>
+                <div class="products-grid" id="adminProductsGrid">
+                    <p>Загрузка товаров...</p>
+                </div>
+            </div>
+
+            <div class="admin-content" id="tab-stats" style="display: none;">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+                        <div class="stat-value" id="totalOrders">0</div>
+                        <div class="stat-label">Всего заказов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-ruble-sign"></i></div>
+                        <div class="stat-value" id="totalRevenue">0 ₽</div>
+                        <div class="stat-label">Общая выручка</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="stat-value" id="avgProfit">0 ₽</div>
+                        <div class="stat-label">Средняя прибыль</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-percentage"></i></div>
+                        <div class="stat-value" id="avgMargin">0%</div>
+                        <div class="stat-label">Средняя маржа</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="modal" id="orderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Заказ <span id="modalOrderNumber"></span></h2>
+                <button class="modal-close" onclick="closeOrderModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalOrderDetails">
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2024 EngiNeo. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/admin.js"></script>
+</body>
+</html>
+
+===============================================
+MAIN.JS
+===============================================
+// ========================================
+// Основной JavaScript
+// ========================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Мобильное меню
+    initMobileMenu();
+    
+    // Переключатель темы
+    initThemeToggle();
+    
+    // Загрузка популярных товаров на главной
+    loadPopularProducts();
+    
+    // Анимация счётчиков
+    animateCounters();
+    
+    // FAQ аккордеон
+    initFAQ();
+    
+    // Плавная прокрутка
+    initSmoothScroll();
+    
+    // Обработка формы быстрого заказа
+    initQuickOrderForm();
+});
+
+// ========================================
+// Мобильное меню
+// ========================================
+function initMobileMenu() {
+    const menuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    
+    if (!menuBtn || !mobileMenu) return;
+    
+    menuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('active');
+        const icon = menuBtn.querySelector('i');
+        icon.classList.toggle('fa-bars');
+        icon.classList.toggle('fa-times');
+    });
+    
+    // Закрытие меню при клике на ссылку
+    mobileMenu.querySelectorAll('.mobile-nav-link').forEach(link => {
+        link.addEventListener('click', () => {
+            mobileMenu.classList.remove('active');
+            const icon = menuBtn.querySelector('i');
+            icon.classList.add('fa-bars');
+            icon.classList.remove('fa-times');
+        });
+    });
+    
+    // Закрытие меню при клике вне его
+    document.addEventListener('click', (e) => {
+        if (!mobileMenu.contains(e.target) && !menuBtn.contains(e.target)) {
+            mobileMenu.classList.remove('active');
+            const icon = menuBtn.querySelector('i');
+            icon.classList.add('fa-bars');
+            icon.classList.remove('fa-times');
+        }
+    });
+}
+
+// ========================================
+// Переключатель темы
+// ========================================
+function initThemeToggle() {
+    const toggleBtn = document.getElementById('themeToggle');
+    if (!toggleBtn) return;
+    
+    const icon = toggleBtn.querySelector('i');
+    
+    // Загрузка сохранённой темы
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
+    }
+    
+    // Переключение темы
+    toggleBtn.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        if (currentTheme === 'dark') {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('theme', 'light');
+            icon.classList.remove('fa-sun');
+            icon.classList.add('fa-moon');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('theme', 'dark');
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        }
+    });
+}
+
+// ========================================
+// Популярные товары
+// ========================================
+function loadPopularProducts() {
+    const container = document.getElementById('popularProducts');
+    if (!container) return;
+    
+    // Берём первые 4 товара с бейджем "Хит" или высоким рейтингом
+    const popular = products
+        .filter(p => p.badge === 'Хит' || p.rating >= 4.8)
+        .slice(0, 4);
+    
+    container.innerHTML = popular.map(product => createProductCard(product)).join('');
+    
+    // Навешиваем обработчики на кнопки "В корзину"
+    container.querySelectorAll('.add-to-cart').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const productId = parseInt(e.target.closest('.product-card').dataset.id);
+            const product = products.find(p => p.id === productId);
+            if (product) {
+                cart.add(productId, {
+                    material: product.materials[0],
+                    color: product.colors[0],
+                    size: product.sizes[0]
+                });
+            }
+        });
+    });
+}
+
+// ========================================
+// Создание карточки товара
+// ========================================
+function createProductCard(product) {
+    const badgeHTML = product.badge ? `<span class="product-badge">${product.badge}</span>` : '';
+    const optionsHTML = `
+        <div class="product-options">
+            <span class="product-option">${getMaterialLabel(product.materials[0])}</span>
+            <span class="product-option">${product.colors[0]}</span>
+        </div>
+    `;
+    
+    return `
+        <div class="product-card" data-id="${product.id}">
+            <div class="product-image">
+                ${badgeHTML}
+                <i class="fas ${product.image}"></i>
+            </div>
+            <div class="product-info">
+                <span class="product-category">${product.categoryLabel}</span>
+                <h3 class="product-title">${product.title}</h3>
+                ${optionsHTML}
+                <div class="product-footer">
+                    <span class="product-price">${product.price} <small>₽</small></span>
+                    <button class="add-to-cart" aria-label="Добавить в корзину">
+                        <i class="fas fa-cart-plus"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ========================================
+// Получение названия материала
+// ========================================
+function getMaterialLabel(materialId) {
+    const material = materials.find(m => m.id === materialId);
+    return material ? material.label : materialId;
+}
+
+// ========================================
+// Анимация счётчиков
+// ========================================
+function animateCounters() {
+    const counters = document.querySelectorAll('.stat-number[data-count]');
+    if (!counters.length) return;
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const counter = entry.target;
+                const target = parseInt(counter.dataset.count);
+                const duration = 2000;
+                const step = target / (duration / 16);
+                let current = 0;
+                
+                const updateCounter = () => {
+                    current += step;
+                    if (current < target) {
+                        counter.textContent = Math.floor(current).toLocaleString('ru-RU');
+                        requestAnimationFrame(updateCounter);
+                    } else {
+                        counter.textContent = target.toLocaleString('ru-RU') + '+';
+                    }
+                };
+                
+                updateCounter();
+                observer.unobserve(counter);
+            }
+        });
+    }, { threshold: 0.5 });
+    
+    counters.forEach(counter => observer.observe(counter));
+}
+
+// ========================================
+// FAQ аккордеон
+// ========================================
+function initFAQ() {
+    const faqItems = document.querySelectorAll('.faq-item');
+    
+    faqItems.forEach(item => {
+        const question = item.querySelector('.faq-question');
+        if (!question) return;
+        
+        question.addEventListener('click', () => {
+            const isActive = item.classList.contains('active');
+            
+            // Закрываем все остальные
+            faqItems.forEach(i => i.classList.remove('active'));
+            
+            // Открываем/закрываем текущий
+            if (!isActive) {
+                item.classList.add('active');
+            }
+        });
+    });
+}
+
+// ========================================
+// Плавная прокрутка
+// ========================================
+function initSmoothScroll() {
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            if (href === '#') return;
+            
+            const target = document.querySelector(href);
+            if (!target) return;
+            
+            e.preventDefault();
+            const headerOffset = 80;
+            const elementPosition = target.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+            
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
+        });
+    });
+}
+
+// ========================================
+// Форма быстрого заказа с STL загрузкой
+// ========================================
+let currentTempFilePath = '';
+let currentStlAnalysis = null;
+
+function initQuickOrderForm() {
+    const form = document.getElementById('quickOrderForm');
+    const fileInput = document.getElementById('fileUpload');
+    if (!form) return;
+
+    if (fileInput) {
+        fileInput.addEventListener('change', async (e) => {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+
+            const file = files[0];
+            const fileName = file.name.toLowerCase();
+
+            if (fileName.endsWith('.stl')) {
+                const objectUrl = URL.createObjectURL(file);
+                showStlPreview(objectUrl, file.name);
+            }
+
+            const formData = new FormData();
+            formData.append('files', file);
+
+            try {
+                const response = await fetch('http://localhost:3000/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.success && result.data && result.data.length > 0) {
+                    const uploadedFile = result.data[0];
+                    currentTempFilePath = uploadedFile.tempFilePath || '';
+                    currentStlAnalysis = uploadedFile.stlAnalysis || null;
+
+                    if (currentStlAnalysis) {
+                        showStlInfo(currentStlAnalysis);
+                    }
+
+                    const tempFilePathInput = document.getElementById('tempFilePath');
+                    if (tempFilePathInput) {
+                        tempFilePathInput.value = currentTempFilePath;
+                    }
+                }
+            } catch (err) {
+                console.error('Upload error:', err);
+                cart.showNotification('Ошибка загрузки файла', 'error');
+            }
+        });
+    }
+
+    const productTypeRadios = document.querySelectorAll('input[name="productType"]');
+    productTypeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const isReady = e.target.value === 'ready';
+            toggleFileUpload(!isReady);
+            if (isReady) {
+                hideStlPreview();
+            }
+        });
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        const productType = data.productType || 'custom';
+
+        const orderData = {
+            title: data.name || 'Заказ с сайта',
+            quantity: 1,
+            material: data.material || 'PETG Гексалит',
+            printerName: 'Flashforge Adventurer 5m',
+            paymentMethod: 'Перевод',
+            deliveryType: 'courier',
+            totalPrice: parseFloat(data.totalPrice) || 1200,
+            shippingCost: 300,
+            productType: productType,
+            tempFilePath: productType === 'custom' ? currentTempFilePath : '',
+            email: data.email,
+            phone: data.phone,
+            contactMethod: 'Сайт'
+        };
+
+        try {
+            const response = await fetch('http://localhost:3000/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderData)
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                cart.showNotification(`Заказ ${result.data?.number} создан! Прибыль: ${result.message?.split('Прибыль: ')[1] || 'N/A'}`, 'success');
+                form.reset();
+                hideStlPreview();
+                currentTempFilePath = '';
+                currentStlAnalysis = null;
+            } else {
+                cart.showNotification(result.error || 'Ошибка создания заказа', 'error');
+            }
+        } catch (err) {
+            console.error('Order error:', err);
+            cart.showNotification('Ошибка отправки заказа', 'error');
+        }
+    });
+}
+
+function showStlPreview(objectUrl, fileName) {
+    let viewer = document.getElementById('stlViewer');
+    let container = document.getElementById('previewContainer');
+
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'previewContainer';
+        container.className = 'preview-container';
+        container.innerHTML = `
+            <model-viewer id="stlViewer" src="" auto-rotate camera-controls style="width: 100%; height: 300px; background: var(--bg-secondary); border-radius: 8px;"></model-viewer>
+            <div id="previewInfo" class="preview-info"></div>
+        `;
+        const fileUpload = document.querySelector('.file-upload');
+        fileUpload?.parentNode?.insertBefore(container, fileUpload.nextSibling);
+        viewer = document.getElementById('stlViewer');
+    }
+
+    if (viewer) {
+        viewer.src = objectUrl;
+    }
+    container.style.display = 'block';
+}
+
+function showStlInfo(analysis) {
+    const info = document.getElementById('previewInfo');
+    if (info && analysis) {
+        info.innerHTML = `📐 Объем: ${analysis.volumeCm3} см³ | 🧵 Длина нити: ${analysis.lengthMeters} м`;
+    }
+}
+
+function hideStlPreview() {
+    const container = document.getElementById('previewContainer');
+    if (container) {
+        container.style.display = 'none';
+    }
+    currentTempFilePath = '';
+    currentStlAnalysis = null;
+}
+
+function toggleFileUpload(show) {
+    const fileUpload = document.querySelector('.file-upload');
+    if (fileUpload) {
+        fileUpload.style.display = show ? 'flex' : 'none';
+    }
+}
+
+window.updatePreview = showStlPreview;
+
+// ========================================
+// Форматирование цены
+// ========================================
+function formatPrice(price) {
+    return price.toLocaleString('ru-RU') + ' ₽';
+}
+
+// ========================================
+// Маска для телефона
+// ========================================
+function initPhoneMask() {
+    const phoneInputs = document.querySelectorAll('input[type="tel"]');
+    
+    phoneInputs.forEach(input => {
+        input.addEventListener('input', (e) => {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 0) {
+                if (value[0] === '7' || value[0] === '8') {
+                    value = value.substring(1);
+                }
+                value = '7' + value;
+            }
+            if (value.length > 11) value = value.substring(0, 11);
+            
+            let formatted = '+7';
+            if (value.length > 1) formatted += ' (' + value.substring(1, 4);
+            if (value.length > 4) formatted += ') ' + value.substring(4, 7);
+            if (value.length > 7) formatted += '-' + value.substring(7, 9);
+            if (value.length > 9) formatted += '-' + value.substring(9, 11);
+            
+            e.target.value = formatted;
+        });
+    });
+}
+
+// Запуск маски для телефона
+document.addEventListener('DOMContentLoaded', initPhoneMask);
+
+===============================================
+DATA.JS
+===============================================
+// ========================================
+// Данные о продуктах
+// ========================================
+
+const products = [
+    {
+        id: 1,
+        title: "Фигурка дракона",
+        category: "figurines",
+        categoryLabel: "Фигурки",
+        price: 1200,
+        image: "fa-dragon",
+        badge: "Хит",
+        materials: ["pla", "petg", "resin"],
+        sizes: ["medium", "large"],
+        colors: ["Красный", "Зелёный", "Синий", "Чёрный"],
+        rating: 5,
+        reviews: 24,
+        description: "Детализированная фигурка дракона с расправленными крыльями"
+    },
+    {
+        id: 2,
+        title: "Ваза геометрическая",
+        category: "decoration",
+        categoryLabel: "Декор",
+        price: 850,
+        image: "fa-vase",
+        badge: "Новинка",
+        materials: ["pla", "petg"],
+        sizes: ["medium"],
+        colors: ["Белый", "Серый", "Бежевый"],
+        rating: 4.8,
+        reviews: 18,
+        description: "Стильная ваза с геометрическим узором для современного интерьера"
+    },
+    {
+        id: 3,
+        title: "Шестерня техническая",
+        category: "technical",
+        categoryLabel: "Технические детали",
+        price: 350,
+        image: "fa-cog",
+        materials: ["abs", "nylon", "petg"],
+        sizes: ["small", "medium"],
+        colors: ["Чёрный", "Белый", "Серый"],
+        rating: 4.9,
+        reviews: 42,
+        description: "Прочная шестерня для механических устройств"
+    },
+    {
+        id: 4,
+        title: "Подставка для наушников",
+        category: "accessories",
+        categoryLabel: "Аксессуары",
+        price: 950,
+        image: "fa-headphones",
+        badge: null,
+        materials: ["pla", "abs", "petg"],
+        sizes: ["medium"],
+        colors: ["Чёрный", "Белый", "Красный", "Синий"],
+        rating: 4.7,
+        reviews: 31,
+        description: "Эргономичная подставка для игровых наушников"
+    },
+    {
+        id: 5,
+        title: "Фигурка совы",
+        category: "figurines",
+        categoryLabel: "Фигурки",
+        price: 780,
+        image: "fa-crow",
+        badge: null,
+        materials: ["pla", "resin"],
+        sizes: ["small"],
+        colors: ["Коричневый", "Серый", "Белый"],
+        rating: 4.6,
+        reviews: 15,
+        description: "Милая фигурка совы с большими глазами"
+    },
+    {
+        id: 6,
+        title: "Кашпо для цветов",
+        category: "decoration",
+        categoryLabel: "Декор",
+        price: 650,
+        image: "fa-leaf",
+        badge: null,
+        materials: ["pla", "petg"],
+        sizes: ["small", "medium"],
+        colors: ["Терракотовый", "Зелёный", "Серый"],
+        rating: 4.5,
+        reviews: 22,
+        description: "Кашпо с дренажным отверстием для комнатных растений"
+    },
+    {
+        id: 7,
+        title: "Корпус для электроники",
+        category: "technical",
+        categoryLabel: "Технические детали",
+        price: 550,
+        image: "fa-microchip",
+        badge: null,
+        materials: ["abs", "petg", "nylon"],
+        sizes: ["small", "medium"],
+        colors: ["Чёрный", "Белый", "Прозрачный"],
+        rating: 4.8,
+        reviews: 38,
+        description: "Универсальный корпус для Arduino и Raspberry Pi"
+    },
+    {
+        id: 8,
+        title: "Брелок с логотипом",
+        category: "accessories",
+        categoryLabel: "Аксессуары",
+        price: 200,
+        image: "fa-key",
+        badge: null,
+        materials: ["pla", "abs", "flex"],
+        sizes: ["small"],
+        colors: ["Любой цвет"],
+        rating: 4.4,
+        reviews: 56,
+        description: "Персонализированный брелок с вашим логотипом"
+    },
+    {
+        id: 9,
+        title: "Фигурка рыцаря",
+        category: "figurines",
+        categoryLabel: "Фигурки",
+        price: 1450,
+        image: "fa-chess-knight",
+        badge: "Хит",
+        materials: ["resin", "pla"],
+        sizes: ["medium"],
+        colors: ["Серебро", "Золото", "Сталь"],
+        rating: 4.9,
+        reviews: 28,
+        description: "Детализированная фигурка средневекового рыцаря в доспехах"
+    },
+    {
+        id: 10,
+        title: "Светильник луна",
+        category: "decoration",
+        categoryLabel: "Декор",
+        price: 1800,
+        image: "fa-moon",
+        badge: "Новинка",
+        materials: ["pla"],
+        sizes: ["large"],
+        colors: ["Белый", "Жёлтый"],
+        rating: 5,
+        reviews: 12,
+        description: "Настольный светильник в форме луны с LED подсветкой"
+    },
+    {
+        id: 11,
+        title: "Кронштейн для монитора",
+        category: "technical",
+        categoryLabel: "Технические детали",
+        price: 1200,
+        image: "fa-tv",
+        badge: null,
+        materials: ["abs", "nylon", "petg"],
+        sizes: ["large"],
+        colors: ["Чёрный", "Серый"],
+        rating: 4.7,
+        reviews: 19,
+        description: "Прочный кронштейн для крепления монитора до 27 дюймов"
+    },
+    {
+        id: 12,
+        title: "Органайзер для кабелей",
+        category: "accessories",
+        categoryLabel: "Аксессуары",
+        price: 380,
+        image: "fa-plug",
+        badge: null,
+        materials: ["pla", "flex"],
+        sizes: ["small"],
+        colors: ["Чёрный", "Белый", "Серый"],
+        rating: 4.6,
+        reviews: 45,
+        description: "Набор органайзеров для упорядочивания кабелей"
+    },
+    {
+        id: 13,
+        title: "Игрушка динозавр",
+        category: "toys",
+        categoryLabel: "Игрушки",
+        price: 920,
+        image: "fa-dragon",
+        badge: null,
+        materials: ["pla", "petg"],
+        sizes: ["medium"],
+        colors: ["Зелёный", "Синий", "Красный"],
+        rating: 4.8,
+        reviews: 33,
+        description: "Подвижная игрушка динозавра с шарнирными соединениями"
+    },
+    {
+        id: 14,
+        title: "Кубик Рубика",
+        category: "toys",
+        categoryLabel: "Игрушки",
+        price: 450,
+        image: "fa-dice",
+        badge: null,
+        materials: ["pla", "abs"],
+        sizes: ["small"],
+        colors: ["Классический", "Чёрный"],
+        rating: 4.5,
+        reviews: 27,
+        description: "Классический кубик Рубика 3x3, напечатанный на 3D принтере"
+    },
+    {
+        id: 15,
+        title: "Фигурка космонавта",
+        category: "figurines",
+        categoryLabel: "Фигурки",
+        price: 1100,
+        image: "fa-user-astronaut",
+        badge: null,
+        materials: ["pla", "resin"],
+        sizes: ["medium"],
+        colors: ["Белый", "Серебро"],
+        rating: 4.7,
+        reviews: 21,
+        description: "Фигурка космонавта в скафандре для коллекции"
+    },
+    {
+        id: 16,
+        title: "Держатель для телефона",
+        category: "accessories",
+        categoryLabel: "Аксессуары",
+        price: 420,
+        image: "fa-mobile-alt",
+        badge: null,
+        materials: ["pla", "petg", "flex"],
+        sizes: ["small"],
+        colors: ["Чёрный", "Белый", "Синий", "Красный"],
+        rating: 4.6,
+        reviews: 52,
+        description: "Регулируемая подставка для смартфона на рабочий стол"
+    }
+];
+
+// Категории
+const categories = [
+    { id: "all", label: "Все категории", icon: "fa-th" },
+    { id: "figurines", label: "Фигурки", icon: "fa-chess-knight" },
+    { id: "decoration", label: "Декор", icon: "fa-home" },
+    { id: "technical", label: "Технические детали", icon: "fa-cog" },
+    { id: "accessories", label: "Аксессуары", icon: "fa-headphones" },
+    { id: "toys", label: "Игрушки", icon: "fa-gamepad" }
+];
+
+// Материалы
+const materials = [
+    { id: "pla", label: "PLA", description: "Биоразлагаемый, для декора" },
+    { id: "petg", label: "PETG", description: "Прочный, универсальный" },
+    { id: "abs", label: "ABS", description: "Ударопрочный, для деталей" },
+    { id: "flex", label: "Flex", description: "Гибкий, резиноподобный" },
+    { id: "nylon", label: "Nylon", description: "Износостойкий, для шестерён" },
+    { id: "resin", label: "Resin", description: "Высокая детализация" }
+];
+
+// Промокоды
+const promoCodes = {
+    "WELCOME10": { discount: 0.1, description: "Скидка 10% на первый заказ" },
+    "SUMMER20": { discount: 0.2, description: "Летняя скидка 20%" },
+    "FREESHIP": { discount: 0, freeShipping: true, description: "Бесплатная доставка" }
+};
+
+// Экспорт для использования в других файлах
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { products, categories, materials, promoCodes };
+}
+
+===============================================
+CART.JS
+===============================================
+// ========================================
+// Корзина покупок
+// ========================================
+
+class Cart {
+    constructor() {
+        this.items = [];
+        this.load();
+        this.updateCartCount();
+    }
+
+    // Загрузка корзины из localStorage
+    load() {
+        const saved = localStorage.getItem('cart');
+        if (saved) {
+            try {
+                this.items = JSON.parse(saved);
+            } catch (e) {
+                this.items = [];
+            }
+        }
+    }
+
+    // Сохранение корзины в localStorage
+    save() {
+        localStorage.setItem('cart', JSON.stringify(this.items));
+        this.updateCartCount();
+    }
+
+    // Добавление товара в корзину
+    add(productId, options = {}) {
+        const product = products.find(p => p.id === productId);
+        if (!product) return false;
+
+        const existingIndex = this.items.findIndex(item => 
+            item.id === productId && 
+            JSON.stringify(item.options) === JSON.stringify(options)
+        );
+
+        if (existingIndex !== -1) {
+            this.items[existingIndex].quantity += 1;
+        } else {
+            this.items.push({
+                id: product.id,
+                title: product.title,
+                price: product.price,
+                image: product.image,
+                category: product.category,
+                options: {
+                    material: options.material || product.materials[0],
+                    color: options.color || product.colors[0],
+                    size: options.size || product.sizes[0]
+                },
+                quantity: 1
+            });
+        }
+
+        this.save();
+        this.showNotification('Товар добавлен в корзину', 'success');
+        return true;
+    }
+
+    // Удаление товара из корзины
+    remove(index) {
+        this.items.splice(index, 1);
+        this.save();
+    }
+
+    // Обновление количества товара
+    updateQuantity(index, quantity) {
+        if (quantity < 1) {
+            this.remove(index);
+            return;
+        }
+        this.items[index].quantity = quantity;
+        this.save();
+    }
+
+    // Увеличение количества
+    increaseQuantity(index) {
+        this.items[index].quantity += 1;
+        this.save();
+    }
+
+    // Уменьшение количества
+    decreaseQuantity(index) {
+        if (this.items[index].quantity > 1) {
+            this.items[index].quantity -= 1;
+        } else {
+            this.remove(index);
+        }
+        this.save();
+    }
+
+    // Очистка корзины
+    clear() {
+        this.items = [];
+        this.save();
+    }
+
+    // Получение общей суммы
+    getSubtotal() {
+        return this.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    }
+
+    // Получение количества товаров
+    getTotalItems() {
+        return this.items.reduce((sum, item) => sum + item.quantity, 0);
+    }
+
+    // Применение промокода
+    applyPromoCode(code) {
+        const promo = promoCodes[code.toUpperCase()];
+        if (!promo) {
+            return { valid: false, message: 'Неверный промокод' };
+        }
+        return { valid: true, promo };
+    }
+
+    // Расчёт доставки
+    getShipping(deliveryType) {
+        const shippingRates = {
+            pickup: 0,
+            courier: this.getSubtotal() > 5000 ? 0 : 300,
+            post: this.getSubtotal() > 3000 ? 0 : 500
+        };
+        return shippingRates[deliveryType] || 0;
+    }
+
+    // Обновление счётчика корзины
+    updateCartCount() {
+        const countElements = document.querySelectorAll('#cartCount');
+        const totalItems = this.getTotalItems();
+        countElements.forEach(el => {
+            el.textContent = totalItems;
+            if (totalItems > 0) {
+                el.style.display = 'flex';
+            } else {
+                el.style.display = 'none';
+            }
+        });
+    }
+
+    // Показ уведомления
+    showNotification(message, type = 'info') {
+        // Удаляем существующие уведомления
+        const existing = document.querySelector('.cart-notification');
+        if (existing) existing.remove();
+
+        const notification = document.createElement('div');
+        notification.className = `cart-notification ${type}`;
+        notification.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+            <span>${message}</span>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => notification.classList.add('show'), 10);
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+}
+
+// Создаём глобальный экземпляр корзины
+const cart = new Cart();
+
+// Стили для уведомлений
+const notificationStyles = `
+<style>
+    .cart-notification {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 1rem 1.5rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        z-index: 9999;
+        transform: translateX(120%);
+        transition: transform 0.3s ease;
+    }
+    .cart-notification.show {
+        transform: translateX(0);
+    }
+    .cart-notification.success {
+        border-left: 4px solid #10b981;
+    }
+    .cart-notification.success i {
+        color: #10b981;
+    }
+    .cart-notification.info {
+        border-left: 4px solid #3b82f6;
+    }
+    .cart-notification.info i {
+        color: #3b82f6;
+    }
+    .cart-notification.error {
+        border-left: 4px solid #ef4444;
+    }
+    .cart-notification.error i {
+        color: #ef4444;
+    }
+</style>
+`;
+
+document.head.insertAdjacentHTML('beforeend', notificationStyles);
+
+===============================================
+ADMIN.JS
+===============================================
+const API_BASE = 'http://localhost:3000/api';
+
+document.addEventListener('DOMContentLoaded', () => {
+    initTabs();
+    loadOrders();
+    loadStats();
+    initFilters();
+});
+
+function initTabs() {
+    const tabs = document.querySelectorAll('.admin-tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            document.querySelectorAll('.admin-content').forEach(content => {
+                content.style.display = 'none';
+            });
+
+            const targetId = `tab-${tab.dataset.tab}`;
+            document.getElementById(targetId).style.display = 'block';
+        });
+    });
+}
+
+async function loadOrders() {
+    try {
+        const response = await fetch(`${API_BASE}/orders/all`);
+        const result = await response.json();
+
+        if (result.success && result.data) {
+            renderOrders(result.data);
+        } else {
+            document.getElementById('ordersTableBody').innerHTML = '<tr><td colspan="7">Нет заказов</td></tr>';
+        }
+    } catch (err) {
+        console.error('Error loading orders:', err);
+        document.getElementById('ordersTableBody').innerHTML = '<tr><td colspan="7" class="error">Ошибка загрузки</td></tr>';
+    }
+}
+
+function renderOrders(orders) {
+    const tbody = document.getElementById('ordersTableBody');
+    if (orders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7">Нет заказов</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = orders.map(order => `
+        <tr>
+            <td>${order.number}</td>
+            <td>${new Date(order.date).toLocaleDateString('ru-RU')}</td>
+            <td>${order.items?.[0]?.title || '-'}</td>
+            <td>${order.items?.[0]?.quantity || 1}</td>
+            <td>${order.total} ₽</td>
+            <td><span class="order-status ${order.status}">${getStatusLabel(order.status)}</span></td>
+            <td class="order-actions">
+                <button onclick="viewOrder('${order.id}')" title="Подробнее">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button onclick="editOrderStatus('${order.id}')" title="Изменить статус">
+                    <i class="fas fa-edit"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function getStatusLabel(status) {
+    const labels = {
+        'pending': 'Новый',
+        'processing': 'В обработке',
+        'printing': 'Печать',
+        'quality-check': 'Проверка',
+        'ready': 'Готов',
+        'shipped': 'Отправлен',
+        'delivered': 'Доставлен',
+        'cancelled': 'Отменён'
+    };
+    return labels[status] || status;
+}
+
+async function viewOrder(orderId) {
+    try {
+        const response = await fetch(`${API_BASE}/orders/${orderId}`);
+        const result = await response.json();
+
+        if (result.success) {
+            showOrderModal(result.data);
+        }
+    } catch (err) {
+        console.error('Error loading order:', err);
+    }
+}
+
+function showOrderModal(order) {
+    document.getElementById('modalOrderNumber').textContent = order.number;
+    document.getElementById('modalOrderDetails').innerHTML = `
+        <div class="order-detail-info">
+            <p><strong>Дата:</strong> ${new Date(order.date).toLocaleString('ru-RU')}</p>
+            <p><strong>Статус:</strong> <span class="order-status ${order.status}">${getStatusLabel(order.status)}</span></p>
+            <p><strong>Товар:</strong> ${order.items?.[0]?.title}</p>
+            <p><strong>Количество:</strong> ${order.items?.[0]?.quantity}</p>
+            <p><strong>Материал:</strong> ${order.items?.[0]?.options?.material}</p>
+            <p><strong>Принтер:</strong> ${order.items?.[0]?.options?.printer || 'Не указан'}</p>
+            <p><strong>Итого:</strong> ${order.total} ₽</p>
+            <p><strong>Доставка:</strong> ${order.delivery?.type}</p>
+            <p><strong>Оплата:</strong> ${order.payment}</p>
+            ${order.customer?.email ? `<p><strong>Email:</strong> ${order.customer.email}</p>` : ''}
+            ${order.customer?.phone ? `<p><strong>Телефон:</strong> ${order.customer.phone}</p>` : ''}
+        </div>
+    `;
+    document.getElementById('orderModal').classList.add('active');
+}
+
+function closeOrderModal() {
+    document.getElementById('orderModal').classList.remove('active');
+}
+
+async function editOrderStatus(orderId) {
+    const newStatus = prompt('Введите новый статус:\npending, processing, printing, quality-check, ready, shipped, delivered, cancelled');
+    if (!newStatus) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/orders/${orderId}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            alert('Статус обновлён');
+            loadOrders();
+        } else {
+            alert('Ошибка: ' + result.error);
+        }
+    } catch (err) {
+        console.error('Error updating status:', err);
+        alert('Ошибка обновления статуса');
+    }
+}
+
+function initFilters() {
+    const statusFilter = document.getElementById('statusFilter');
+    const searchOrder = document.getElementById('searchOrder');
+
+    statusFilter?.addEventListener('change', filterOrders);
+    searchOrder?.addEventListener('input', filterOrders);
+}
+
+async function filterOrders() {
+    const status = document.getElementById('statusFilter')?.value;
+    const search = document.getElementById('searchOrder')?.value.toLowerCase();
+
+    try {
+        const response = await fetch(`${API_BASE}/orders/all`);
+        const result = await response.json();
+
+        if (result.success && result.data) {
+            let orders = result.data;
+
+            if (status) {
+                orders = orders.filter(o => o.status === status);
+            }
+            if (search) {
+                orders = orders.filter(o => o.number?.toLowerCase().includes(search));
+            }
+
+            renderOrders(orders);
+        }
+    } catch (err) {
+        console.error('Filter error:', err);
+    }
+}
+
+async function loadStats() {
+    try {
+        const response = await fetch(`${API_BASE}/orders/all`);
+        const result = await response.json();
+
+        if (result.success && result.data) {
+            const orders = result.data;
+            const totalOrders = orders.length;
+            const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+            const avgProfit = totalOrders > 0 ? Math.round(totalRevenue * 0.3) : 0;
+            const avgMargin = totalRevenue > 0 ? Math.round((avgProfit / totalRevenue) * 100) : 0;
+
+            document.getElementById('totalOrders').textContent = totalOrders;
+            document.getElementById('totalRevenue').textContent = totalRevenue.toLocaleString('ru-RU') + ' ₽';
+            document.getElementById('avgProfit').textContent = avgProfit.toLocaleString('ru-RU') + ' ₽';
+            document.getElementById('avgMargin').textContent = avgMargin + '%';
+        }
+    } catch (err) {
+        console.error('Stats error:', err);
+    }
+}
+
+window.viewOrder = viewOrder;
+window.editOrderStatus = editOrderStatus;
+window.closeOrderModal = closeOrderModal;
+
+===============================================
+END OF PROJECT
+===============================================

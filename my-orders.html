@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EngiNeo — Мои заказы</title>
+    <link rel="icon" type="image/png" href="image/logo.png">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">
+                <img src="image/logo.png" alt="EngiNeo">
+                <span>EngiNeo</span>
+            </div>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Главная</a>
+                <a href="catalog.html" class="nav-link">Каталог</a>
+                <a href="services.html" class="nav-link">Услуги</a>
+                <a href="about.html" class="nav-link">О нас</a>
+                <a href="contact.html" class="nav-link">Контакты</a>
+            </nav>
+            <div class="header-actions">
+                <a href="cart.html" class="cart-btn">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cartCount">0</span>
+                </a>
+                <a href="my-orders.html" class="cart-btn active">
+                    <i class="fas fa-box"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <section class="page-header">
+        <div class="container">
+            <h1>Мои заказы</h1>
+            <div class="breadcrumb">
+                <a href="index.html">Главная</a>
+                <span>/</span>
+                <span>Мои заказы</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="my-orders-section">
+        <div class="container">
+            <div class="orders-auth">
+                <div class="form-group">
+                    <label for="emailInput">Введите email для поиска заказов:</label>
+                    <div class="search-row">
+                        <input type="email" id="emailInput" placeholder="your@email.com" required>
+                        <button class="btn btn-primary" id="searchOrdersBtn">
+                            <i class="fas fa-search"></i> Найти
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="orders-list" id="ordersList">
+                <div class="orders-empty">
+                    <i class="fas fa-box-open"></i>
+                    <h2>Нет заказов</h2>
+                    <p>Введите email, чтобы найти свои заказы</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="modal" id="orderDetailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Заказ <span id="detailOrderNumber"></span></h2>
+                <button class="modal-close" onclick="closeDetailModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="detailOrderContent">
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2024 EngiNeo. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/my-orders.js"></script>
+</body>
+</html>

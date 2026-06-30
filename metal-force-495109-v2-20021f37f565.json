@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "metal-force-495109-v2",
+  "private_key_id": "20021f37f5655dedb9116897347adb2537e9afbc",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCknYICvcVpgRMW\nYGaxC6ffCfRIz8CHS3A5WCS0zncRzgWKHWLndrBHvcLzdPWKQzqAKcYY2h1Oub9F\nZ3uJ3MlvSvaLirs0I57wNE2aUpFTjUFmsjD6p4NiftCpylBwWLkRM5OnEDSmr7bo\nSzr2lPbiC+47koety93p+7E/SN2qmiw6zEhY0NNTGMl/KfQuq3F8/doSRGnyEFfv\nmvT1yXp7zDQFScueVrk65lVgpOv6FaexcmzMDoZOs4Lr4DBtUY6W7XZFnjP4ZBI0\nZ8R2+9u+xQKwUWP9T9rZf4WvzDVvaUz9cycDps8Tx8KYj2lCJKaU2zrecxKzSupu\n8mbs/j7xAgMBAAECggEAAiPrNoN0BVOskqE4iUIOpIUlLOaYxng5W8vY3NS1JRPZ\nHAx2zm3WBosZ0CdqdfSa28Mcnd1lTYfCMX9iIow5SSzCkj+GAKGwrvyixcA/yVls\nIvR2HnExLDBRdgQGVMKeOTei5SR+McILElUVkv05Ip459+Jx/bU5jpGeIoBH7mBB\n1GTqvUOl9wNeIxBwM3Ti9x5LZzhY309n41Jap/DZ5MHQ4hTfJ9Kk5qCFobXfHnDa\nauWmvnjXkX0gIVksbomJ9NIbkA3Pols5YEOHqDgVRRsUuI3oAS4vuBAHFOsQy1Dq\nV775GN9cu0WKXnrs9VO5twb5eXepvg8+XVjm2TqqoQKBgQDOcexKo9k6HqIkHUp2\n5UClH5qNFq+POwyc3oGnE8hs0jfiAC0WomwjaRbCglRKlnwS8+APBEawsQEE1CEc\nNg7DvG9NrNQKWYDnR22F5qQChFyhoYyO6cEHuurb/7qpx9vlVt/Uk4IU5NvwK12I\nlhP7rQAbCXe1XFl3mqFZBHHPkQKBgQDMISP/uv9A1EZueUC7LRzVnTh7igYm/w9W\nh1pRKvabU+fWDBIaEKZp5mN78M8zkYMNtVulKjpTIpMBVvPaKamhRFaslqZEVXr6\nqOheDAfPwgKicuTJIhi3Ssufq7sIPPrO/rBcZHnxneFyMbiD2AeRH737WmOYdT9L\nwiEWyCqJYQKBgGxDoFhwXt407HEmD0QU6/bsgP+WsxDZNb8ajUHShRxUjkvuLbce\nDLnxRadR8+R90KmbzZfydSP6X39pw8dorguGSZShmz2mPIyNj+lV0BMl2PJGp1DX\nU4y7QKmJDho1nqNCEPYJOYG9l333MAEOO4KT8mc7atTojl7D7/Of+hORAoGBAJe+\nMxKRodpBcrIA9Puvh3XMUAaWDgjDJlW+fIdGFthUwUy+4F377pleqKmj04OUMgXo\nwV3ATGcslncyeke9HNpDAON/gc3edXMMSOBQtSXeJTM5kZVrAVCQC1qAwKJZImDp\nt5SXJIdWRBctmup3lvhszj+ha9QTpJ/eidZzqhtBAoGAP6XR/D2Hk7mll3ClAHMN\npO0KtVrmvR3BGXQw4dqojmDIOA696ROWKJ1L58uR8B2U82sepFNhGa9N5LJvKO04\nd3BF+up+ouDWF3gtBIrNCoCJz1fjx427yIhcvjELgqsYkVxHmCtO8q+BQEcl/0EF\nREcVw8IPi1/GlrxKs4dx+tM=\n-----END PRIVATE KEY-----\n",
+  "client_email": "sheets-operator@metal-force-495109-v2.iam.gserviceaccount.com",
+  "client_id": "101630694693322571773",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/sheets-operator%40metal-force-495109-v2.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

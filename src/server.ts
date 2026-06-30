@@ -56,6 +56,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Статические файлы (клиентский фронтенд)
 app.use(express.static(path.join(__dirname, '..')));
+app.use('/default', express.static(path.join(__dirname, 'default')));
 
 // ========================================
 // API маршруты
