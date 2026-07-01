@@ -129,3 +129,18 @@ export interface FileUpload {
   size: number;
   mimetype: string;
 }
+
+export interface CreateProductRequest {
+  title: string;
+  description: string;
+  category: string;
+  categoryLabel: string;
+  price: number;
+  image?: string;
+  badge?: string;
+  materials?: string[];
+  sizes?: string[];
+  colors?: string[];
+  stlFile?: string;
+  photos?: string[];
+}

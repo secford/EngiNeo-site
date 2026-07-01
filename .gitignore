@@ -14,7 +14,7 @@ build/
 .env.local
 .env.*.local
 !.env.example
-
+metal-force-495109-v2-20021f37f565.json
 # IDE
 .vscode/
 .idea/
@@ -48,3 +48,5 @@ temp/
 
 # Qwen settings (optional, uncomment if needed)
 # .qwen/
+project.txt
+Project2.txt

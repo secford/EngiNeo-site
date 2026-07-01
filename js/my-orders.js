@@ -1,6 +1,7 @@
 const API_BASE = 'http://localhost:3000/api';
 
 document.addEventListener('DOMContentLoaded', () => {
+    initThemeToggle();
     const searchBtn = document.getElementById('searchOrdersBtn');
     const emailInput = document.getElementById('emailInput');
 
@@ -11,10 +12,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function searchOrders() {
-    const email = document.getElementById('emailInput').value.trim();
+    const query = document.getElementById('emailInput').value.trim();
 
-    if (!email) {
-        alert('Введите email');
+    if (!query) {
+        alert('Введите email или номер заказа');
         return;
     }
 
@@ -22,7 +23,7 @@ async function searchOrders() {
     list.innerHTML = '<div class="loading">Загрузка...</div>';
 
     try {
-        const response = await fetch(`${API_BASE}/orders/email/${encodeURIComponent(email)}`);
+        const response = await fetch(`${API_BASE}/orders/track?q=${encodeURIComponent(query)}`);
         const result = await response.json();
 
         if (result.success && result.data && result.data.length > 0) {
@@ -32,7 +33,7 @@ async function searchOrders() {
                 <div class="orders-empty">
                     <i class="fas fa-box-open"></i>
                     <h2>Заказы не найдены</h2>
-                    <p>По этому email заказов не найдено</p>
+                    <p>По вашему запросу заказов не найдено</p>
                 </div>
             `;
         }
@@ -48,42 +49,102 @@ async function searchOrders() {
     }
 }
 
+function getStatusStep(status) {
+    const steps = {
+        'pending': 1,
+        'processing': 2,
+        'printing': 3,
+        'quality-check': 4,
+        'ready': 5,
+        'shipped': 6,
+        'delivered': 7,
+        'cancelled': -1
+    };
+    return steps[status] || 0;
+}
+
+function renderTimeline(order) {
+    const steps = [
+        { key: 'pending', label: 'Новый', icon: 'fa-clipboard-list' },
+        { key: 'processing', label: 'В обработке', icon: 'fa-cogs' },
+        { key: 'printing', label: 'Печать', icon: 'fa-print' },
+        { key: 'quality-check', label: 'Проверка', icon: 'fa-search' },
+        { key: 'ready', label: 'Готов', icon: 'fa-check-circle' },
+        { key: 'shipped', label: 'Отправлен', icon: 'fa-truck' },
+        { key: 'delivered', label: 'Доставлен', icon: 'fa-home' }
+    ];
+
+    const currentStep = getStatusStep(order.status);
+    const isCancelled = order.status === 'cancelled';
+
+    let html = '<div class="order-timeline">';
+    
+    if (isCancelled) {
+        html += `
+            <div class="timeline-cancelled">
+                <i class="fas fa-times-circle"></i>
+                <span>Заказ отменён</span>
+            </div>
+        `;
+    } else {
+        steps.forEach((step, index) => {
+            const stepNum = index + 1;
+            const isCompleted = stepNum <= currentStep;
+            const isCurrent = stepNum === currentStep;
+            const isFuture = stepNum > currentStep;
+
+            html += `
+                <div class="timeline-step ${isCompleted ? 'completed' : ''} ${isCurrent ? 'current' : ''} ${isFuture ? 'future' : ''}">
+                    <div class="timeline-marker">
+                        <i class="fas ${step.icon}"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <span class="timeline-label">${step.label}</span>
+                    </div>
+                    ${index < steps.length - 1 ? '<div class="timeline-line"></div>' : ''}
+                </div>
+            `;
+        });
+    }
+
+    html += '</div>';
+    return html;
+}
+
 function renderOrders(orders) {
     const list = document.getElementById('ordersList');
     list.innerHTML = orders.map(order => {
         const item = order.items?.[0] || {};
-        const card = document.createElement('div');
-        card.className = 'order-card';
-        card.dataset.orderId = order.id;
-        card.innerHTML = `
-            <div class="order-card-header">
-                <span class="order-number">${order.number}</span>
-                <span class="order-status ${order.status}">${getStatusLabel(order.status)}</span>
-            </div>
-            <div class="order-card-body">
-                <div class="order-item-info">
-                    <h4>${item.title || 'Товар'}</h4>
-                    <p>Кол-во: ${item.quantity || 1}</p>
-                    <p>Материал: ${item.options?.material || '-'}</p>
+        const timeline = renderTimeline(order);
+        return `
+            <div class="order-card" data-order-id="${order.id}">
+                <div class="order-card-header">
+                    <span class="order-number">${order.number}</span>
+                    <span class="order-status ${order.status}">${getStatusLabel(order.status)}</span>
                 </div>
-                <div class="order-item-info">
-                    <p>Дата: ${new Date(order.date).toLocaleDateString('ru-RU')}</p>
-                    <p>Доставка: ${order.delivery?.type || '-'}</p>
-                    <p>Оплата: ${order.payment || '-'}</p>
+                <div class="order-card-body">
+                    <div class="order-item-info">
+                        <h4>${item.title || 'Товар'}</h4>
+                        <p>Кол-во: ${item.quantity || 1}</p>
+                        <p>Материал: ${item.options?.material || '-'}</p>
+                    </div>
+                    <div class="order-item-info">
+                        <p>Дата: ${new Date(order.date).toLocaleDateString('ru-RU')}</p>
+                        <p>Доставка: ${order.delivery?.type || '-'}</p>
+                        <p>Оплата: ${order.payment || '-'}</p>
+                    </div>
                 </div>
-            </div>
-            <div class="order-summary">
-                <span>Сумма заказа:</span>
-                <span class="order-total">${order.total} ₽</span>
+                ${timeline}
+                <div class="order-summary">
+                    <span>Сумма заказа:</span>
+                    <span class="order-total">${order.total} ₽</span>
+                </div>
+                <button class="btn btn-outline btn-small" onclick="viewOrderDetail('${order.id}')" style="margin-top:0.5rem;width:100%">
+                    Подробнее
+                </button>
             </div>
         `;
-        return card.outerHTML;
     }).join('');
-
-    // Добавляем обработчики
-    list.querySelectorAll('.order-card').forEach(card => {
-        card.addEventListener('click', () => viewOrderDetail(card.dataset.orderId));
-    });
 }
 
 function getStatusLabel(status) {
@@ -104,7 +165,6 @@ async function viewOrderDetail(orderId) {
     try {
         const response = await fetch(`${API_BASE}/orders/${orderId}`);
         const result = await response.json();
-
         if (result.success) {
             showDetailModal(result.data);
         }
@@ -115,9 +175,11 @@ async function viewOrderDetail(orderId) {
 
 function showDetailModal(order) {
     const item = order.items?.[0] || {};
+    const timeline = renderTimeline(order);
     document.getElementById('detailOrderNumber').textContent = order.number;
     document.getElementById('detailOrderContent').innerHTML = `
-        <div class="order-detail-info">
+        ${timeline}
+        <div class="order-detail-info" style="margin-top:1rem">
             <p><strong>Дата создания:</strong> ${new Date(order.date).toLocaleString('ru-RU')}</p>
             <p><strong>Статус:</strong> <span class="order-status ${order.status}">${getStatusLabel(order.status)}</span></p>
             <hr style="margin: 1rem 0; border-color: var(--border-color);">
@@ -142,6 +204,32 @@ function showDetailModal(order) {
 
 function closeDetailModal() {
     document.getElementById('orderDetailModal').classList.remove('active');
+}
+
+function initThemeToggle() {
+    const toggleBtn = document.getElementById('themeToggle');
+    if (!toggleBtn) return;
+    const icon = toggleBtn.querySelector('i');
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
+    }
+    toggleBtn.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        if (currentTheme === 'dark') {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('theme', 'light');
+            icon.classList.remove('fa-sun');
+            icon.classList.add('fa-moon');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('theme', 'dark');
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        }
+    });
 }
 
 window.viewOrderDetail = viewOrderDetail;

@@ -24,7 +24,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Обработка формы быстрого заказа
     initQuickOrderForm();
 });
-
+function initMap() {
+    const map = new google.maps.Map(document.getElementById("map"), {
+      center: { lat: 55.7558, lng: 37.6173 },
+      zoom: 8,
+    });
+  }
 // ========================================
 // Мобильное меню
 // ========================================
@@ -140,21 +145,23 @@ function createProductCard(product) {
     
     return `
         <div class="product-card" data-id="${product.id}">
-            <div class="product-image">
-                ${badgeHTML}
-                <i class="fas ${product.image}"></i>
-            </div>
-            <div class="product-info">
-                <span class="product-category">${product.categoryLabel}</span>
-                <h3 class="product-title">${product.title}</h3>
-                ${optionsHTML}
-                <div class="product-footer">
-                    <span class="product-price">${product.price} <small>₽</small></span>
-                    <button class="add-to-cart" aria-label="Добавить в корзину">
-                        <i class="fas fa-cart-plus"></i>
-                    </button>
+            <a href="product.html?id=${product.id}" class="product-link" style="text-decoration:none;color:inherit">
+                <div class="product-image">
+                    ${badgeHTML}
+                    <i class="fas ${product.image}"></i>
                 </div>
-            </div>
+                <div class="product-info">
+                    <span class="product-category">${product.categoryLabel}</span>
+                    <h3 class="product-title">${product.title}</h3>
+                    ${optionsHTML}
+                    <div class="product-footer">
+                        <span class="product-price">${product.price} <small>₽</small></span>
+                    </div>
+                </div>
+            </a>
+            <button class="add-to-cart" aria-label="Добавить в корзину" style="position:absolute;bottom:1rem;right:1rem">
+                <i class="fas fa-cart-plus"></i>
+            </button>
         </div>
     `;
 }
@@ -257,6 +264,46 @@ function initSmoothScroll() {
 function initQuickOrderForm() {
     const form = document.getElementById('quickOrderForm');
     if (!form) return;
+
+    const fileInput = document.getElementById('fileUpload');
+    const previewContainer = document.getElementById('quick-stl-preview');
+    let stlViewerInstance = null;
+
+    if (fileInput && previewContainer) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) {
+                previewContainer.style.display = 'none';
+                return;
+            }
+            if (!file.name.toLowerCase().endsWith('.stl')) {
+                previewContainer.style.display = 'none';
+                return;
+            }
+            previewContainer.style.display = 'block';
+            previewContainer.innerHTML = '';
+            previewContainer.id = 'quickStlViewer';
+
+            if (typeof StlViewer !== 'undefined' && typeof THREE !== 'undefined') {
+                stlViewerInstance = new StlViewer('quickStlViewer', {
+                    autoRotate: true,
+                    backgroundColor: 0x1a1a2e,
+                    modelColor: 0x4fc3f7,
+                    height: 250
+                });
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    const buffer = ev.target.result;
+                    if (stlViewerInstance && stlViewerInstance.loadStlFromBuffer) {
+                        stlViewerInstance.loadStlFromBuffer(buffer);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                previewContainer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888"><i class="fas fa-cube" style="font-size:48px;margin-right:1rem"></i><span>3D файл загружен</span></div>';
+            }
+        });
+    }
     
     form.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -264,9 +311,16 @@ function initQuickOrderForm() {
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         
-        // Имитация отправки
         cart.showNotification('Заявка отправлена! Мы свяжемся с вами в течение 30 минут', 'success');
         form.reset();
+        if (previewContainer) {
+            previewContainer.style.display = 'none';
+            previewContainer.innerHTML = '';
+        }
+        if (stlViewerInstance && stlViewerInstance.destroy) {
+            stlViewerInstance.destroy();
+            stlViewerInstance = null;
+        }
     });
 }
 

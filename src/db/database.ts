@@ -297,6 +297,25 @@ export function getOrdersByEmail(email: string): Order[] {
   return orders.filter((o) => o.customer.email.toLowerCase() === email.toLowerCase());
 }
 
+export function getAllOrders(): Order[] {
+  return orders;
+}
+
+export function getOrdersByNumberOrEmail(query: string): Order[] {
+  const lower = query.toLowerCase();
+  return orders.filter((o) =>
+    o.number.toLowerCase().includes(lower) ||
+    o.customer.email.toLowerCase().includes(lower)
+  );
+}
+
+export function addProduct(product: Product): Product {
+  const maxId = products.reduce((max, p) => Math.max(max, p.id), 0);
+  product.id = maxId + 1;
+  products.push(product);
+  return product;
+}
+
 export function updateOrderStatus(id: string, status: OrderStatus): Order | undefined {
   const order = getOrderById(id);
   if (order) {

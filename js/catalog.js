@@ -264,24 +264,26 @@ function renderProducts() {
     } else {
         productsGrid.innerHTML = pageProducts.map(product => `
             <div class="product-card" data-id="${product.id}">
-                <div class="product-image">
-                    ${product.badge ? `<span class="product-badge">${product.badge}</span>` : ''}
-                    <i class="fas ${product.image}"></i>
-                </div>
-                <div class="product-info">
-                    <span class="product-category">${product.categoryLabel}</span>
-                    <h3 class="product-title">${product.title}</h3>
-                    <div class="product-options">
-                        <span class="product-option">${getMaterialLabel(product.materials[0])}</span>
-                        <span class="product-option">${product.colors[0]}</span>
+                <a href="product.html?id=${product.id}" class="product-link" style="text-decoration:none;color:inherit">
+                    <div class="product-image">
+                        ${product.badge ? `<span class="product-badge">${product.badge}</span>` : ''}
+                        <i class="fas ${product.image}"></i>
                     </div>
-                    <div class="product-footer">
-                        <span class="product-price">${product.price} <small>₽</small></span>
-                        <button class="add-to-cart" aria-label="Добавить в корзину">
-                            <i class="fas fa-cart-plus"></i>
-                        </button>
+                    <div class="product-info">
+                        <span class="product-category">${product.categoryLabel}</span>
+                        <h3 class="product-title">${product.title}</h3>
+                        <div class="product-options">
+                            <span class="product-option">${getMaterialLabel(product.materials[0])}</span>
+                            <span class="product-option">${product.colors[0]}</span>
+                        </div>
+                        <div class="product-footer">
+                            <span class="product-price">${product.price} <small>₽</small></span>
+                        </div>
                     </div>
-                </div>
+                </a>
+                <button class="add-to-cart" aria-label="Добавить в корзину" style="position:absolute;bottom:1rem;right:1rem">
+                    <i class="fas fa-cart-plus"></i>
+                </button>
             </div>
         `).join('');
         

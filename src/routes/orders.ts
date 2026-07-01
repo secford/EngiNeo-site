@@ -4,10 +4,13 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import nodemailer from 'nodemailer';
 import {
   saveOrder,
   getOrderById,
   getOrdersByEmail,
+  getAllOrders,
+  getOrdersByNumberOrEmail,
   updateOrderStatus,
   generateOrderNumber,
 } from '../db/database';
@@ -19,6 +22,93 @@ import {
 import { AppError } from '../middleware/error';
 
 const router = Router();
+
+// Транспорт для отправки email
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.SMTP_PORT || '587', 10),
+  secure: process.env.SMTP_SECURE === 'true',
+  auth: {
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+  },
+});
+
+async function sendOrderConfirmation(order: Order): Promise<void> {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return;
+
+  const statusLabels: Record<string, string> = {
+    'pending': 'Новый',
+    'processing': 'В обработке',
+    'printing': 'Печать',
+    'quality-check': 'Проверка качества',
+    'ready': 'Готов',
+    'shipped': 'Отправлен',
+    'delivered': 'Доставлен',
+    'cancelled': 'Отменён',
+  };
+
+  const itemsHtml = order.items.map(item => `
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid #eee">${item.title}</td>
+      <td style="padding:8px;border-bottom:1px solid #eee;text-align:center">${item.quantity}</td>
+      <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${item.price} ₽</td>
+    </tr>
+  `).join('');
+
+  const html = `
+    <div style="max-width:600px;margin:0 auto;font-family:Arial,sans-serif">
+      <div style="background:linear-gradient(135deg,#667eea,#764ba2);padding:30px;text-align:center;border-radius:10px 10px 0 0">
+        <h1 style="color:#fff;margin:0;font-size:24px">EngiNeo — 3D печать</h1>
+        <p style="color:#ddd;margin:8px 0 0">Ваш заказ подтверждён</p>
+      </div>
+      <div style="background:#fff;padding:30px;border:1px solid #eee">
+        <p style="font-size:16px;color:#333">Здравствуйте, <strong>${order.customer.firstName || 'Уважаемый клиент'}</strong>!</p>
+        <p style="color:#555">Спасибо за ваш заказ! Мы уже начали его обработку.</p>
+        <div style="background:#f8f9fa;padding:15px;border-radius:8px;margin:20px 0">
+          <p style="margin:0 0 5px"><strong>Номер заказа:</strong> ${order.number}</p>
+          <p style="margin:0 0 5px"><strong>Дата:</strong> ${new Date(order.date).toLocaleString('ru-RU')}</p>
+          <p style="margin:0 0 5px"><strong>Статус:</strong> ${statusLabels[order.status] || order.status}</p>
+          <p style="margin:0"><strong>Сумма:</strong> ${order.total} ₽</p>
+        </div>
+        <table style="width:100%;border-collapse:collapse;margin:20px 0">
+          <thead>
+            <tr style="background:#667eea;color:#fff">
+              <th style="padding:10px;text-align:left">Товар</th>
+              <th style="padding:10px;text-align:center">Кол-во</th>
+              <th style="padding:10px;text-align:right">Цена</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+        <div style="border-top:2px solid #667eea;padding:15px 0;margin-top:20px;text-align:right">
+          <p style="margin:0;font-size:18px;font-weight:bold">Итого: ${order.total} ₽</p>
+        </div>
+        <p style="color:#888;font-size:13px;margin-top:20px">
+          Вы можете отслеживать статус заказа на странице:
+          <a href="${process.env.SITE_URL || 'http://localhost:3000'}/my-orders.html" style="color:#667eea">Мои заказы</a>
+        </p>
+      </div>
+      <div style="background:#2d2d3d;padding:20px;text-align:center;border-radius:0 0 10px 10px">
+        <p style="color:#999;margin:0;font-size:12px">© 2024 EngiNeo — Студия 3D печати</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: `"EngiNeo" <${process.env.SMTP_USER}>`,
+      to: order.customer.email,
+      subject: `Заказ ${order.number} подтверждён — EngiNeo`,
+      html,
+    });
+    console.log(`Email sent for order ${order.number}`);
+  } catch (err) {
+    console.error('Email send error:', err);
+  }
+}
 
 /**
  * POST /api/orders
@@ -70,7 +160,7 @@ router.post('/', (req: Request, res: Response, next: NextFunction): void => {
 
     const savedOrder = saveOrder(order);
 
-    // Здесь можно отправить email клиенту
+    sendOrderConfirmation(savedOrder);
 
     const response: ApiResponse<Order> = {
       success: true,
@@ -81,6 +171,44 @@ router.post('/', (req: Request, res: Response, next: NextFunction): void => {
     res.status(201).json(response);
   } catch (err) {
     next(err);
+  }
+});
+
+/**
+ * GET /api/orders/track
+ * Поиск заказов по email или номеру заказа
+ */
+router.get('/track', (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const query = (req.query.q as string || '').trim();
+    if (!query) {
+      throw new AppError('Укажите email или номер заказа', 400);
+    }
+    const orders = getOrdersByNumberOrEmail(query);
+    const response: ApiResponse<Order[]> = {
+      success: true,
+      data: orders,
+    };
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/orders/all
+ * Получение всех заказов (для админа)
+ */
+router.get('/all', (_req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const orders = getAllOrders();
+    const response: ApiResponse<Order[]> = {
+      success: true,
+      data: orders,
+    };
+    res.json(response);
+  } catch (err) {
+    next(new AppError('Ошибка при получении заказов', 500));
   }
 });
 

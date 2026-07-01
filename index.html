@@ -7,14 +7,9 @@
     <link rel="icon" type="image/png" href="image/logo.png">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three-stl-loader@1.0.1/index.min.js"></script>
     <script src="dist/default/StlViewer.js"></script>
-    <style>
-        #stl_cont {
-            width: 100%;
-            height: 500px;
-            background-color: #222; /* Сделаем темный фон для красоты */
-        }
-    </style>
 </head>
 <body>
     
@@ -195,8 +190,9 @@
                             <i class="fas fa-cloud-upload-alt"></i>
                             <span>Загрузить 3D файл (.stl, .obj, .3mf)</span>
                         </label>
-                        <input type="file" id="fileUpload" accept=".stl,.obj,.3mf" multiple>
+                        <input type="file" id="fileUpload" accept=".stl,.obj,.3mf">
                     </div>
+                    <div id="quick-stl-preview" style="display:none;width:100%;height:250px;margin-bottom:1rem;border-radius:8px;overflow:hidden;background:#1a1a2e"></div>
                     <button type="submit" class="btn btn-primary btn-full">Рассчитать стоимость</button>
                 </form>
             </div>
@@ -214,9 +210,9 @@
                     </div>
                     <p>Профессиональная студия 3D печати. Создаём ваши идеи в реальность.</p>
                     <div class="social-links">
-                        <a href="#"><i class="fab fa-vk"></i></a>
-                        <a href="#"><i class="fab fa-telegram"></i></a>
-                        <a href="#"><i class="fab fa-youtube"></i></a>
+                        <a href="https://vk.com" target="_blank" rel="noopener"><i class="fab fa-vk"></i></a>
+                        <a href="https://t.me" target="_blank" rel="noopener"><i class="fab fa-telegram"></i></a>
+                        <a href="https://youtube.com" target="_blank" rel="noopener"><i class="fab fa-youtube"></i></a>
                     </div>
                 </div>
                 <div class="footer-column">
@@ -250,8 +246,8 @@
             <div class="footer-bottom">
                 <p>&copy; 2024 EngiNeo. Все права защищены.</p>
                 <div class="footer-links">
-                    <a href="#">Политика конфиденциальности</a>
-                    <a href="#">Договор оферты</a>
+                    <a href="privacy.html">Политика конфиденциальности</a>
+                    <a href="offer.html">Договор оферты</a>
                 </div>
             </div>
         </div>

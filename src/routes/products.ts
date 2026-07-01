@@ -3,9 +3,28 @@
 // ========================================
 
 import { Router, Request, Response, NextFunction } from 'express';
-import { products } from '../db/database';
-import { ApiResponse, Product } from '../types';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { products, addProduct } from '../db/database';
+import { ApiResponse, Product, CreateProductRequest } from '../types';
 import { AppError } from '../middleware/error';
+import { authMiddleware, AuthRequest } from '../middleware/auth';
+
+const stlStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const dir = path.join(__dirname, '..', '..', 'stl');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const id = req.params.id || Date.now().toString();
+    cb(null, `${id}.stl`);
+  },
+});
+const uploadStl = multer({ storage: stlStorage, fileFilter: (_req, file, cb) => {
+  cb(null, file.originalname.toLowerCase().endsWith('.stl'));
+} });
 
 const router = Router();
 
@@ -137,6 +156,55 @@ router.get('/categories', (_req: Request, res: Response, next: NextFunction): vo
   } catch (err) {
     next(new AppError('Ошибка при получении категорий', 500));
   }
+});
+
+/**
+ * POST /api/products
+ * Создание нового товара (админка)
+ */
+router.post('/', authMiddleware, (req: AuthRequest, res: Response, next: NextFunction): void => {
+  try {
+    const data = req.body as CreateProductRequest;
+    if (!data.title || !data.price) {
+      throw new AppError('Укажите название и цену товара', 400);
+    }
+    const product: Product = {
+      id: 0,
+      title: data.title,
+      category: data.category || 'other',
+      categoryLabel: data.categoryLabel || data.category || 'Другое',
+      price: data.price,
+      image: data.image || 'fa-cube',
+      badge: data.badge,
+      materials: data.materials || ['pla'],
+      sizes: data.sizes || ['medium'],
+      colors: data.colors || ['Разный'],
+      rating: 0,
+      reviews: 0,
+      description: data.description || '',
+    };
+    const saved = addProduct(product);
+    const response: ApiResponse<Product> = {
+      success: true,
+      data: saved,
+      message: 'Товар успешно добавлен',
+    };
+    res.status(201).json(response);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/products/:id/stl
+ * Загрузка STL файла для товара
+ */
+router.post('/:id/stl', authMiddleware, (req: Request, res: Response, next: NextFunction): void => {
+  uploadStl.single('stlFile')(req, res, (err) => {
+    if (err) return next(new AppError('Ошибка загрузки файла', 400));
+    if (!req.file) return next(new AppError('Файл не загружен', 400));
+    res.json({ success: true, message: 'STL файл загружен', data: { filename: req.file.filename } });
+  });
 });
 
 export default router;

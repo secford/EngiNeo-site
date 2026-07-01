@@ -21,25 +21,38 @@
                 <a href="admin.html" class="nav-link active">Админ</a>
             </nav>
             <div class="header-actions">
+                <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
+                    <i class="fas fa-moon"></i>
+                </button>
                 <a href="my-orders.html" class="cart-btn">
                     <i class="fas fa-box"></i>
                 </a>
+                <button id="logoutBtn" style="display:none;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.9rem;margin-left:0.5rem">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
             </div>
         </div>
     </header>
 
-    <section class="page-header">
+    <!-- Форма логина -->
+    <section class="admin-login-section" id="loginSection">
         <div class="container">
-            <h1>Админ-панель</h1>
-            <div class="breadcrumb">
-                <a href="index.html">Главная</a>
-                <span>/</span>
-                <span>Админ</span>
+            <div class="login-form-wrapper" style="max-width:400px;margin:4rem auto;padding:2rem;background:var(--bg-card);border-radius:12px;border:1px solid var(--border-color)">
+                <h2 style="text-align:center;margin-bottom:1.5rem">Вход в админ-панель</h2>
+                <div class="form-group">
+                    <input type="text" id="loginUsername" placeholder="Логин" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="loginPassword" placeholder="Пароль" required>
+                </div>
+                <button class="btn btn-primary btn-full" id="loginBtn">Войти</button>
+                <p id="loginError" style="color:var(--danger);text-align:center;margin-top:0.5rem;display:none"></p>
             </div>
         </div>
     </section>
 
-    <section class="admin-section">
+    <!-- Панель управления (скрыта до авторизации) -->
+    <section class="admin-section" id="adminPanel" style="display:none">
         <div class="container">
             <div class="admin-tabs">
                 <button class="admin-tab active" data-tab="orders">Заказы</button>
@@ -76,15 +89,13 @@
                             </tr>
                         </thead>
                         <tbody id="ordersTableBody">
-                            <tr>
-                                <td colspan="7" class="loading">Загрузка...</td>
-                            </tr>
+                            <tr><td colspan="7" class="loading">Загрузка...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <div class="admin-content" id="tab-products" style="display: none;">
+            <div class="admin-content" id="tab-products" style="display:none">
                 <div class="admin-filters">
                     <select id="categoryFilter">
                         <option value="">Все категории</option>
@@ -103,7 +114,7 @@
                 </div>
             </div>
 
-            <div class="admin-content" id="tab-stats" style="display: none;">
+            <div class="admin-content" id="tab-stats" style="display:none">
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
@@ -113,7 +124,7 @@
                     <div class="stat-card">
                         <div class="stat-icon"><i class="fas fa-ruble-sign"></i></div>
                         <div class="stat-value" id="totalRevenue">0 ₽</div>
-                        <div class="stat-label">Общая выручка</div>
+                        <div class="stat-label">Общий доход</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
@@ -130,15 +141,78 @@
         </div>
     </section>
 
+    <!-- Модалка деталей заказа -->
     <div class="modal" id="orderModal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Заказ <span id="modalOrderNumber"></span></h2>
-                <button class="modal-close" onclick="closeOrderModal()">
-                    <i class="fas fa-times"></i>
-                </button>
+                <button class="modal-close" onclick="closeOrderModal()"><i class="fas fa-times"></i></button>
             </div>
-            <div class="modal-body" id="modalOrderDetails">
+            <div class="modal-body" id="modalOrderDetails"></div>
+        </div>
+    </div>
+
+    <!-- Модалка добавления товара -->
+    <div class="modal" id="productModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Добавить товар</h2>
+                <button class="modal-close" onclick="closeProductModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="productForm">
+                    <div class="form-group">
+                        <label>Название товара</label>
+                        <input type="text" id="prodTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Описание</label>
+                        <textarea id="prodDescription" rows="3"></textarea>
+                    </div>
+                    <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                        <div class="form-group">
+                            <label>Цена (₽)</label>
+                            <input type="number" id="prodPrice" min="0" step="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Категория</label>
+                            <select id="prodCategory">
+                                <option value="figurines">Фигурки</option>
+                                <option value="decoration">Декор</option>
+                                <option value="technical">Технические</option>
+                                <option value="accessories">Аксессуары</option>
+                                <option value="toys">Игрушки</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Материалы (через запятую: pla,petg,abs)</label>
+                        <input type="text" id="prodMaterials" value="pla,petg,abs">
+                    </div>
+                    <div class="form-group">
+                        <label>Цвета (через запятую)</label>
+                        <input type="text" id="prodColors" value="Красный,Синий,Чёрный">
+                    </div>
+                    <div class="form-group">
+                        <label>Значок (например: Хит, Новинка)</label>
+                        <input type="text" id="prodBadge">
+                    </div>
+                    <div class="form-group">
+                        <label>Иконка FontAwesome (например: fa-cube, fa-dragon)</label>
+                        <input type="text" id="prodImage" value="fa-cube">
+                    </div>
+                    <div class="form-group">
+                        <label>STL файл (3D модель)</label>
+                        <div class="file-upload">
+                            <input type="file" id="prodStlFile" accept=".stl" style="display:none">
+                            <label for="prodStlFile" style="display:flex;align-items:center;gap:0.5rem;padding:0.75rem 1rem;border:2px dashed var(--border-color);border-radius:8px;cursor:pointer;transition:var(--transition)">
+                                <i class="fas fa-upload"></i>
+                                <span id="stlFileName">Выберите STL файл</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full" id="submitProductBtn">Сохранить товар</button>
+                </form>
             </div>
         </div>
     </div>

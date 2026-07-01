@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Корзина — EngiNeo</title>
+    <title>EngiNeo — Товар</title>
     <link rel="icon" type="image/png" href="image/logo.png">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three-stl-loader@1.0.1/index.min.js"></script>
+    <script src="dist/default/StlViewer.js"></script>
 </head>
 <body>
-    <!-- Шапка сайта -->
     <header class="header">
         <div class="container header-content">
             <div class="logo">
@@ -27,7 +29,7 @@
                 <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
                     <i class="fas fa-moon"></i>
                 </button>
-                <a href="cart.html" class="cart-btn active">
+                <a href="cart.html" class="cart-btn">
                     <i class="fas fa-shopping-cart"></i>
                     <span class="cart-count" id="cartCount">0</span>
                 </a>
@@ -38,7 +40,6 @@
         </div>
     </header>
 
-    <!-- Мобильное меню -->
     <div class="mobile-menu" id="mobileMenu">
         <a href="index.html" class="mobile-nav-link">Главная</a>
         <a href="catalog.html" class="mobile-nav-link">Каталог</a>
@@ -47,68 +48,94 @@
         <a href="contact.html" class="mobile-nav-link">Контакты</a>
     </div>
 
-    <!-- Заголовок страницы -->
     <section class="page-header">
         <div class="container">
-            <h1>Корзина</h1>
             <nav class="breadcrumb">
                 <a href="index.html">Главная</a>
                 <span>/</span>
-                <span>Корзина</span>
+                <a href="catalog.html">Каталог</a>
+                <span>/</span>
+                <span id="productBreadcrumb">Товар</span>
             </nav>
         </div>
     </section>
 
-    <!-- Содержимое корзины -->
-    <section class="cart-section">
+    <section class="product-detail">
         <div class="container">
-            <div class="cart-layout">
-                <!-- Товары в корзине -->
-                <div class="cart-items" id="cartItems">
-                    <!-- Товары загружаются через JS -->
+            <div class="product-detail-grid">
+                <div class="product-gallery">
+                    <div class="stl-viewer-container" id="stlViewerContainer">
+                        <div class="stl-viewer-placeholder">
+                            <i class="fas fa-cube"></i>
+                            <p>Загрузка 3D модели...</p>
+                        </div>
+                    </div>
+                    <div class="product-thumbnails" id="productThumbnails">
+                    </div>
                 </div>
+                <div class="product-info-sidebar">
+                    <span class="product-category" id="productCategory"></span>
+                    <h1 class="product-title-main" id="productTitle"></h1>
+                    <div class="product-rating" id="productRating"></div>
+                    <p class="product-price-main" id="productPrice"></p>
 
-                <!-- Пустая корзина -->
-                <div class="cart-empty" id="cartEmpty" style="display: none;">
-                    <i class="fas fa-shopping-cart"></i>
-                    <h2>Ваша корзина пуста</h2>
-                    <p>Добавьте товары из каталога, чтобы оформить заказ</p>
-                    <a href="catalog.html" class="btn btn-primary">Перейти в каталог</a>
+                    <div class="product-options-selector">
+                        <div class="option-group">
+                            <label for="optionMaterial">Материал</label>
+                            <select id="optionMaterial"></select>
+                        </div>
+                        <div class="option-group">
+                            <label for="optionColor">Цвет</label>
+                            <select id="optionColor"></select>
+                        </div>
+                        <div class="option-group">
+                            <label for="optionSize">Размер</label>
+                            <select id="optionSize"></select>
+                        </div>
+                        <div class="option-group">
+                            <label for="optionQuality">Точность печати</label>
+                            <select id="optionQuality">
+                                <option value="standard">Стандартная (0.2 мм)</option>
+                                <option value="high">Высокая (0.1 мм) +30%</option>
+                                <option value="ultra">Ультра (0.05 мм) +60%</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="product-total-price">
+                        <span class="total-label">Итого:</span>
+                        <span class="total-value" id="totalPrice">0 ₽</span>
+                    </div>
+
+                    <button class="btn btn-primary btn-full btn-large" id="addToCartBtn">
+                        <i class="fas fa-cart-plus"></i> Добавить в корзину
+                    </button>
                 </div>
+            </div>
 
-                <!-- Итоговая панель -->
-                <div class="cart-summary" id="cartSummary">
-                    <h3>Итого</h3>
-                    <div class="summary-row">
-                        <span>Товары (<span id="totalItems">0</span> шт.)</span>
-                        <span id="subtotalPrice">0 ₽</span>
+            <div class="product-details-tabs">
+                <div class="tabs-nav">
+                    <button class="tab-btn active" data-tab="description">Описание</button>
+                    <button class="tab-btn" data-tab="characteristics">Характеристики</button>
+                    <button class="tab-btn" data-tab="reviews">Отзывы</button>
+                </div>
+                <div class="tabs-content">
+                    <div class="tab-panel active" id="tab-description">
+                        <p id="productDescription"></p>
                     </div>
-                    <div class="summary-row">
-                        <span>Скидка</span>
-                        <span id="discountPrice" class="discount">-0 ₽</span>
+                    <div class="tab-panel" id="tab-characteristics">
+                        <table class="chars-table" id="charsTable"></table>
                     </div>
-                    <div class="summary-row">
-                        <span>Доставка</span>
-                        <span id="shippingPrice">0 ₽</span>
-                    </div>
-                    <div class="summary-total">
-                        <span>Итого к оплате:</span>
-                        <span id="totalPrice">0 ₽</span>
-                    </div>
-                    <div class="promo-code">
-                        <input type="text" id="promoInput" placeholder="Промокод">
-                        <button class="btn btn-small" id="applyPromo">Применить</button>
-                    </div>
-                    <div class="cart-actions">
-                        <a href="catalog.html" class="btn btn-outline">Продолжить покупки</a>
-                        <a href="checkout.html" class="btn btn-primary btn-full">Оформить заказ</a>
+                    <div class="tab-panel" id="tab-reviews">
+                        <div id="reviewsContent">
+                            <p class="no-reviews">Отзывов пока нет. Будьте первым!</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Футер -->
     <footer class="footer">
         <div class="container">
             <div class="footer-grid">
@@ -164,7 +191,6 @@
 
     <script src="js/data.js"></script>
     <script src="js/cart.js"></script>
-    <script src="js/cart-page.js"></script>
-    <script src="js/main.js"></script>
+    <script src="js/product-detail.js"></script>
 </body>
 </html>
